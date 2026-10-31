@@ -1,0 +1,1202 @@
+<meta charset="utf-8">
+<title>Pit Wall Debrief</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@500;600;700&family=IBM+Plex+Sans:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500&display=swap">
+<style>
+/* Layout concept: a post-race engineering room. Fixed page list on the left, one analysis per page,
+   charts as wide as the screen allows. Colour means one thing each: team (line), tyre compound (chip),
+   faster/slower (blue/red), never decoration. */
+:root{
+  color-scheme:dark;
+  --plane:#0d0d0d;--surface:#1a1a19;--surface-2:#232321;
+  --ink:#f0efec;--ink-2:#c3c2b7;--muted:#9a9890;
+  --grid:#2c2c2a;--axis:#4a4a46;--border:rgba(255,255,255,.10);
+  --hot:#e66767;--cold:#4a95ee;--mid:#383835;--gain:#4a95ee;--loss:#e66767;--good:#0ca30c;--warn:#fab219;--crit:#d03b3b;
+  --q1:#3987e5;--q2:#d95926;--q3:#199e70;
+  --c-s:#e66767;--c-m:#f2c230;--c-h:#e6e5df;--c-i:#2fb36b;--c-w:#4a95ee;
+  --c-s-ink:#0b0b0b;--c-m-ink:#0b0b0b;--c-h-ink:#0b0b0b;--c-i-ink:#0b0b0b;--c-w-ink:#0b0b0b;
+  --f-display:'Barlow Condensed','Arial Narrow',system-ui,sans-serif;
+  --f-body:'IBM Plex Sans',system-ui,-apple-system,'Segoe UI',sans-serif;
+  --f-mono:'IBM Plex Mono',ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;
+  --gut:max(16px,env(safe-area-inset-left,0px));
+}
+@media (prefers-color-scheme:light){
+  :root:not([data-theme="dark"]){
+    color-scheme:light;
+    --plane:#f9f9f7;--surface:#fcfcfb;--surface-2:#f3f2ee;
+    --ink:#0b0b0b;--ink-2:#52514e;--muted:#6f6d68;
+    --grid:#e1e0d9;--axis:#c3c2b7;--border:rgba(11,11,11,.12);
+    --hot:#d03b3b;--cold:#2a78d6;--mid:#f0efec;--gain:#2a78d6;--loss:#d03b3b;
+    --q1:#2a78d6;--q2:#eb6834;--q3:#1baf7a;
+    --c-s:#d03b3b;--c-m:#e0a410;--c-h:#4a4a47;--c-i:#1a8f50;--c-w:#2a78d6;
+    --c-s-ink:#fff;--c-m-ink:#0b0b0b;--c-h-ink:#fff;--c-i-ink:#fff;--c-w-ink:#fff;
+  }
+}
+:root[data-theme="light"]{
+  color-scheme:light;
+  --plane:#f9f9f7;--surface:#fcfcfb;--surface-2:#f3f2ee;
+  --ink:#0b0b0b;--ink-2:#52514e;--muted:#6f6d68;
+  --grid:#e1e0d9;--axis:#c3c2b7;--border:rgba(11,11,11,.12);
+  --hot:#d03b3b;--cold:#2a78d6;--mid:#f0efec;--gain:#2a78d6;--loss:#d03b3b;
+  --q1:#2a78d6;--q2:#eb6834;--q3:#1baf7a;
+  --c-s:#d03b3b;--c-m:#e0a410;--c-h:#4a4a47;--c-i:#1a8f50;--c-w:#2a78d6;
+  --c-s-ink:#fff;--c-m-ink:#0b0b0b;--c-h-ink:#fff;--c-i-ink:#fff;--c-w-ink:#fff;
+}
+*{box-sizing:border-box}
+body{background:var(--plane);color:var(--ink);font-family:var(--f-body);font-size:14px;line-height:1.5;padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px));padding-block:0 60px}
+button,select,input{font:inherit;color:inherit}
+:focus-visible{outline:2px solid var(--ink);outline-offset:2px}
+code,.mono{font-family:var(--f-mono);font-variant-numeric:tabular-nums}
+code{font-size:12px;background:var(--surface-2);padding:1px 5px;border-radius:3px}
+.lbl{font-family:var(--f-mono);font-size:11px;letter-spacing:.08em;text-transform:uppercase;color:var(--muted)}
+.dim{color:var(--ink-2)}.up{color:var(--gain)}.down{color:var(--loss)}.purple{color:#b36bf0;font-weight:500}
+body::before{content:"";position:fixed;inset:0 0 auto;height:env(safe-area-inset-top,0px);background:var(--plane);z-index:40}
+
+.app{display:grid;grid-template-columns:230px minmax(0,1fr);gap:0 28px;max-width:1680px;margin:0 auto}
+.side{position:sticky;top:env(safe-area-inset-top,0px);align-self:start;height:calc(100vh - env(safe-area-inset-top,0px));overflow-y:auto;padding:22px 0 24px;display:flex;flex-direction:column;gap:18px}
+.brand h1{font-family:var(--f-display);font-weight:700;font-size:30px;letter-spacing:.04em;text-transform:uppercase;line-height:1;margin:0}
+#sess{display:flex;flex-direction:column;margin-top:8px;font-size:12px;color:var(--ink-2);line-height:1.4}
+#sess b{font-weight:600;color:var(--ink);font-size:13px}
+#nav{display:flex;flex-direction:column;gap:2px}
+#nav a{display:block;padding:8px 12px;border-radius:4px;color:var(--ink-2);text-decoration:none;font-size:14px;border-left:3px solid transparent}
+#nav a:hover{background:var(--surface-2);color:var(--ink)}
+#nav a.on{background:var(--surface-2);color:var(--ink);font-weight:500;border-left-color:var(--ink)}
+#unused{font-family:var(--f-mono);font-size:11px;color:var(--ink-2);border:1px dashed var(--axis);padding:8px 10px;border-radius:4px;line-height:1.4}
+#sample a{color:var(--ink)}
+main{min-width:0;padding:26px 0 0}
+.ph1{margin-bottom:18px}
+.ph1 h1{font-family:var(--f-display);font-weight:600;font-size:46px;letter-spacing:.02em;text-transform:uppercase;line-height:1;margin:0}
+.lead{margin:6px 0 0;color:var(--ink-2);font-size:15px;max-width:70ch}
+.stack{display:flex;flex-direction:column;gap:20px}
+@media (max-width:900px){
+  .app{grid-template-columns:minmax(0,1fr)}
+  .side{position:sticky;height:auto;overflow:visible;z-index:30;background:var(--plane);padding:10px 0;gap:6px;margin-inline:calc(-1*max(16px,env(safe-area-inset-left,0px)));padding-inline:max(16px,env(safe-area-inset-left,0px));border-bottom:1px solid var(--border)}
+  .brand{display:flex;align-items:baseline;gap:12px;flex-wrap:wrap}.brand h1{font-size:24px}#sess{margin:0;flex-direction:row;gap:8px}
+  #nav{flex-direction:row;overflow-x:auto;gap:2px;padding-bottom:2px}
+  #nav a{white-space:nowrap;border-left:0;border-bottom:3px solid transparent;padding:6px 10px}
+  #nav a.on{border-bottom-color:var(--ink)}
+  
+  .ph1 h1{font-size:36px}
+}
+
+/* panels */
+.panel{background:var(--surface);border:1px solid var(--border);border-radius:6px;padding:20px 22px;min-width:0}
+.panel .ph{display:flex;flex-wrap:wrap;justify-content:space-between;align-items:baseline;gap:4px 18px;margin-bottom:14px}
+.panel h3{font-family:var(--f-display);font-weight:600;font-size:23px;letter-spacing:.03em;text-transform:uppercase;margin:0;line-height:1.1}
+.note{font-size:13px;color:var(--ink-2);max-width:78ch}
+.note2{font-size:13px;color:var(--ink-2);max-width:60ch}
+.foot{margin:12px 0 0;font-size:12px;color:var(--ink-2);max-width:90ch}
+.statline{margin:0 0 10px;font-size:13px;color:var(--ink-2)}.statline b{color:var(--ink);font-weight:500}
+.chart{overflow-x:auto;overflow-y:hidden;min-width:0}
+.chart svg{display:block;touch-action:pan-y}
+.centre{display:flex;flex-direction:column;align-items:center}
+.scale{display:flex;gap:14px;align-items:center;justify-content:center;font-family:var(--f-mono);font-size:12px;color:var(--ink-2);margin-top:8px;flex-wrap:wrap}
+.scale i:not(.sw){display:block;width:200px;height:10px;border-radius:2px}
+svg text{font-family:var(--f-mono);font-size:11px;fill:var(--ink-2)}
+svg .t-muted{fill:var(--muted)}
+.sw{display:inline-block;flex:none}
+.sw.ln{width:18px;height:3px;border-radius:1px;vertical-align:middle;margin-right:7px}
+.car{display:inline-flex;align-items:center;font-family:var(--f-mono);font-size:13px;color:var(--ink)}
+
+/* controls */
+.ctrls{display:flex;flex-wrap:wrap;gap:14px 28px;align-items:flex-end;padding:14px 18px;background:var(--surface);border:1px solid var(--border);border-radius:6px}
+.ctl-g{display:flex;flex-direction:column;gap:5px;min-width:0}
+.seg{display:inline-flex;flex-wrap:wrap;border:1px solid var(--axis);border-radius:4px;overflow:hidden}
+.seg button{background:transparent;border:0;padding:6px 12px;cursor:pointer;font-family:var(--f-mono);font-size:12px;color:var(--ink-2)}
+.seg button+button{border-left:1px solid var(--axis)}
+.seg button[aria-pressed="true"]{background:var(--ink);color:var(--plane)}
+.seg button:not([aria-pressed="true"]):hover{background:var(--surface-2)}
+.sel{background:var(--surface-2);border:1px solid var(--axis);border-radius:4px;padding:6px 10px;min-width:220px;max-width:100%}
+.picker{display:flex;flex-direction:column;gap:8px;width:100%}
+.presets{display:flex;flex-wrap:wrap;gap:6px;align-items:center}
+.dchips{display:flex;flex-wrap:wrap;gap:6px}
+.dchip{display:inline-flex;align-items:center;background:transparent;border:1px solid var(--axis);border-radius:4px;padding:4px 10px 4px 8px;cursor:pointer;font-family:var(--f-mono);font-size:12px;color:var(--ink-2)}
+.dchip[aria-pressed="true"]{background:var(--surface-2);color:var(--ink);border-color:var(--ink-2)}
+.dchip[aria-pressed="false"]{opacity:.6}
+.dchip:hover{background:var(--surface-2)}
+.btn{background:transparent;border:1px solid var(--axis);color:var(--ink);padding:4px 11px;border-radius:4px;cursor:pointer;font-family:var(--f-mono);font-size:12px}
+.btn:hover{background:var(--surface-2)}
+
+/* KPI */
+.kpis{display:grid;grid-template-columns:repeat(auto-fit,minmax(172px,1fr));gap:14px}
+.kpi{background:var(--surface);border:1px solid var(--border);border-radius:6px;padding:16px 18px;min-width:0}
+.kpi .v{font-family:var(--f-display);font-weight:600;font-size:40px;line-height:1.05;margin:4px 0 2px;display:flex;gap:8px;align-items:baseline;flex-wrap:wrap}
+.kpi .v small{font-family:var(--f-mono);font-size:12px;font-weight:400;color:var(--ink-2)}
+.kpi .s{font-size:12px;color:var(--ink-2)}
+
+/* tables */
+.tbl{overflow-x:auto}
+table{border-collapse:collapse;width:100%;font-size:13px}
+th{font-family:var(--f-mono);font-size:11px;letter-spacing:.06em;text-transform:uppercase;font-weight:400;color:var(--muted);text-align:left;padding:7px 12px;border-bottom:1px solid var(--axis);white-space:nowrap}
+td{padding:8px 12px;border-bottom:1px solid var(--grid);white-space:nowrap}
+td.num,th.num{text-align:right;font-family:var(--f-mono);font-variant-numeric:tabular-nums}
+tbody tr:last-child td{border-bottom:0}
+tbody tr:hover td{background:var(--surface-2)}
+.chip{display:inline-flex;align-items:center;justify-content:center;min-width:22px;height:20px;padding:0 5px;border-radius:3px;font-family:var(--f-mono);font-size:11px;font-weight:500}
+.stp{display:inline-flex;align-items:center;gap:4px;margin-right:10px;font-size:12px}
+.tag{font-family:var(--f-mono);font-size:10px;border:1px solid var(--axis);padding:0 4px;border-radius:3px;color:var(--ink-2)}
+.pill{display:inline-flex;gap:6px;align-items:center;font-family:var(--f-mono);font-size:11px;letter-spacing:.04em;text-transform:uppercase;padding:2px 8px;border-radius:3px;border:1px solid var(--axis)}
+.heatw{max-height:none}
+table.heat{width:auto;border-collapse:separate;border-spacing:0}
+table.heat th.h{padding:2px 0;min-width:24px;text-align:center;font-size:10px;border-bottom:0}
+table.heat td.h{padding:0;min-width:24px;width:24px;height:24px;text-align:center;border-bottom:2px solid var(--surface);border-right:1px solid var(--surface);font-family:var(--f-mono);font-size:10px;color:var(--muted)}
+table.heat td.h.x{background:var(--surface-2)}
+table.heat .rowh{position:sticky;left:0;background:var(--surface);z-index:2;text-align:left;padding:0 12px 0 0;min-width:84px;white-space:nowrap}
+table.heat tbody tr:hover td{background:inherit}
+table.heat tbody tr:hover td.h:not(.x){outline:1px solid var(--ink-2)}
+.flag{font-family:var(--f-mono);font-size:11px;padding:1px 6px;border-radius:3px;border:1px solid var(--axis)}
+.flag.yellow,.flag.doubleyellow{background:#f2c230;color:#0b0b0b;border-color:#f2c230}.flag.red{background:var(--crit);color:#fff;border-color:var(--crit)}
+.flag.green,.flag.clear{background:var(--good);color:#0b0b0b;border-color:var(--good)}.flag.blue{background:var(--cold);color:#0b0b0b;border-color:var(--cold)}
+.flag.chequered{background:var(--ink);color:var(--plane)}
+.ev{display:flex;gap:12px;padding:6px 0;font-size:13px;align-items:baseline;border-bottom:1px solid var(--grid)}
+.ev:last-child{border-bottom:0}.ev b{font-family:var(--f-mono);font-weight:500;min-width:40px}.ev.sc b{color:var(--warn)}.ev span{color:var(--ink-2)}
+.empty{padding:28px;border:1px dashed var(--axis);border-radius:6px;color:var(--ink-2);text-align:center}
+
+/* data page */
+.kv{display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:12px 20px;margin-bottom:16px}
+.kv div{display:flex;flex-direction:column;gap:2px}
+.drop{display:flex;flex-direction:column;gap:2px;align-items:center;padding:34px 18px;border:2px dashed var(--axis);border-radius:8px;cursor:pointer;color:var(--ink-2)}
+.drop b{color:var(--ink);font-weight:500;font-size:15px}.drop.over,.drop:hover{border-color:var(--ink);background:var(--surface-2)}
+.steps{margin:0 0 14px;padding-left:20px;color:var(--ink-2)}
+pre.code{margin:12px 0 0;max-height:360px;overflow:auto;background:var(--surface-2);border:1px solid var(--border);border-radius:5px;padding:14px;font-family:var(--f-mono);font-size:12px;line-height:1.5;color:var(--ink-2);white-space:pre}
+.lim{margin:0;padding-left:20px;color:var(--ink-2);display:flex;flex-direction:column;gap:6px}
+.tip{position:fixed;z-index:60;pointer-events:none;background:var(--surface-2);border:1px solid var(--axis);border-radius:5px;padding:9px 11px;font-family:var(--f-mono);font-size:12px;line-height:1.55;color:var(--ink);box-shadow:0 6px 22px rgba(0,0,0,.3);max-width:320px}
+.tip b{font-weight:500;display:block;margin-bottom:2px}.tip .r{display:flex;gap:16px;justify-content:space-between}.tip .r span:first-child{color:var(--ink-2)}
+@media (prefers-reduced-motion:reduce){*{scroll-behavior:auto!important}}
+
+details#pick{border:1px solid var(--border);border-radius:6px;background:var(--surface)}
+details#pick summary{cursor:pointer;padding:9px 12px;font-family:var(--f-mono);font-size:12px;color:var(--ink-2);list-style:none}
+details#pick summary::-webkit-details-marker{display:none}
+details#pick summary::before{content:"\25b8";display:inline-block;margin-right:8px}
+details#pick[open] summary::before{content:"\25be"}
+.picks{display:flex;flex-direction:column;gap:12px;padding:4px 12px 14px}
+.picks .sel{min-width:0;width:100%}
+#loadst{font-family:var(--f-mono);font-size:12px;color:var(--ink-2)}#loadst.err{color:var(--loss)}
+@media (max-width:900px){.picks{flex-direction:row;flex-wrap:wrap}.picks .ctl-g{flex:1 1 200px}}
+</style>
+
+<div class="app">
+  <aside class="side">
+    <div class="brand"><h1>Pit Wall Debrief</h1><div id="sess"></div></div>
+    <details id="pick"><summary><span id="sumtxt">Choose a session</span></summary>
+      <div class="picks">
+        <label class="ctl-g"><span class="lbl">Season</span><select id="selYear" class="sel"></select></label>
+        <label class="ctl-g"><span class="lbl">Race weekend</span><select id="selMeet" class="sel"></select></label>
+        <label class="ctl-g"><span class="lbl">Session</span><select id="selSess" class="sel"></select></label>
+        <label class="ctl-g" id="focusG" hidden><span class="lbl">Focus driver</span><select id="selFocus" class="sel"></select></label>
+        <div id="loadst" hidden></div>
+      </div>
+    </details>
+    <nav id="nav" aria-label="Pages"></nav>
+  </aside>
+  <main id="main"></main>
+</div>
+<div class="tip" id="tip" hidden></div>
+<script>
+/* ================= utilities ================= */
+const $=(s,r=document)=>r.querySelector(s), $$=(s,r=document)=>Array.from(r.querySelectorAll(s));
+const esc=s=>String(s==null?'':s).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+const pd=s=>s==null?null:Date.parse(String(s).replace(/(\.\d{3})\d+/,'$1'));
+const clamp=(x,a,b)=>Math.max(a,Math.min(b,x));
+const lin=(d0,d1,r0,r1)=>{const k=(r1-r0)/((d1-d0)||1);return x=>r0+(x-d0)*k;};
+const fmtLap=t=>{if(t==null||isNaN(t))return '–';const m=Math.floor(t/60);return m+':'+(t-m*60).toFixed(3).padStart(6,'0');};
+const fmtHMS=t=>{if(t==null)return '–';const h=Math.floor(t/3600),m=Math.floor((t-h*3600)/60),s=t-h*3600-m*60;return h+':'+String(m).padStart(2,'0')+':'+s.toFixed(3).padStart(6,'0');};
+const f1=x=>x==null?'–':x.toFixed(1), f2=x=>x==null?'–':x.toFixed(2), f3=x=>x==null?'–':x.toFixed(3);
+const sgn=(x,n=3)=>x==null?'–':(x>=0?'+':'−')+Math.abs(x).toFixed(n);
+const median=a=>{if(!a.length)return null;const s=[...a].sort((x,y)=>x-y),m=s.length>>1;return s.length%2?s[m]:(s[m-1]+s[m])/2;};
+const mean=a=>a.length?a.reduce((x,y)=>x+y,0)/a.length:null;
+const sd=a=>{if(a.length<2)return null;const m=mean(a);return Math.sqrt(a.reduce((s,x)=>s+(x-m)**2,0)/(a.length-1));};
+const quant=(s,p)=>{if(!s.length)return null;const i=(s.length-1)*p,lo=Math.floor(i),hi=Math.ceil(i);return s[lo]+(s[hi]-s[lo])*(i-lo);};
+function regress(xs,ys){
+  const n=xs.length;if(n<3)return null;
+  const mx=mean(xs),my=mean(ys);let sxy=0,sxx=0,syy=0;
+  for(let i=0;i<n;i++){sxy+=(xs[i]-mx)*(ys[i]-my);sxx+=(xs[i]-mx)**2;syy+=(ys[i]-my)**2;}
+  if(!sxx)return null;const slope=sxy/sxx;return{slope,icpt:my-slope*mx,r2:syy?sxy*sxy/(sxx*syy):0,n};
+}
+function ticks(lo,hi,n){
+  if(!(hi>lo))return [lo];
+  const raw=(hi-lo)/n,p=Math.pow(10,Math.floor(Math.log10(raw))),m=raw/p;
+  const step=(m<1.5?1:m<3?2:m<7?5:10)*p,out=[];
+  for(let v=Math.ceil(lo/step-1e-9)*step;v<=hi+1e-9;v+=step)out.push(+v.toFixed(8));
+  return out;
+}
+function spread(items,min){
+  items.sort((a,b)=>a.y-b.y);
+  for(let i=1;i<items.length;i++)if(items[i].y-items[i-1].y<min)items[i].y=items[i-1].y+min;
+  return items;
+}
+/* ---- theme-aware colour helpers ---- */
+const isDark=()=>{const t=document.documentElement.dataset.theme;if(t)return t==='dark';try{return !matchMedia('(prefers-color-scheme: light)').matches;}catch(e){return true;}};
+const hex2=h=>{h=h.replace('#','');if(h.length===3)h=h.split('').map(c=>c+c).join('');return[parseInt(h.slice(0,2),16),parseInt(h.slice(2,4),16),parseInt(h.slice(4,6),16)];};
+const toHex=a=>'#'+a.map(v=>clamp(Math.round(v),0,255).toString(16).padStart(2,'0')).join('');
+const lum=h=>{const[r,g,b]=hex2(h).map(v=>{v/=255;return v<=.03928?v/12.92:Math.pow((v+.055)/1.055,2.4);});return .2126*r+.7152*g+.0722*b;};
+const mix=(a,b,p)=>{const x=hex2(a),y=hex2(b);return toHex(x.map((v,i)=>v+(y[i]-v)*p));};
+function tcol(h){
+  h=/^#[0-9a-f]{6}$/i.test(h||'')?h:'#888888';
+  if(isDark())return lum(h)<.12?mix(h,'#ffffff',.42):h;
+  return lum(h)>.45?mix(h,'#000000',.4):h;
+}
+const colDist=(a,b)=>{const x=hex2(a),y=hex2(b);return Math.hypot(x[0]-y[0],x[1]-y[1],x[2]-y[2]);};
+function pairColors(a,b){const ca=tcol(a.color),cb=tcol(b.color);return colDist(ca,cb)<70?[ca,{c:mix(cb,isDark()?'#ffffff':'#000000',.45),dash:true}]:[ca,{c:cb,dash:false}];}
+function seqColor(p){const lo=isDark()?'#184f95':'#cde2fb',hi=isDark()?'#cfe2fa':'#0d366b';return mix(lo,hi,clamp(p,0,1));}
+const CMAP={SOFT:'S',MEDIUM:'M',HARD:'H',INTERMEDIATE:'I',WET:'W'};
+const cLet=c=>CMAP[c]||'?';
+const cVar=c=>({SOFT:'var(--c-s)',MEDIUM:'var(--c-m)',HARD:'var(--c-h)',INTERMEDIATE:'var(--c-i)',WET:'var(--c-w)'}[c]||'var(--muted)');
+const cInk=c=>({SOFT:'var(--c-s-ink)',MEDIUM:'var(--c-m-ink)',HARD:'var(--c-h-ink)',INTERMEDIATE:'var(--c-i-ink)',WET:'var(--c-w-ink)'}[c]||'var(--ink)');
+const chip=c=>`<span class="chip" style="background:${cVar(c)};color:${cInk(c)}" title="${esc(c)}">${cLet(c)}</span>`;
+const swatch=d=>{const c=tcol(d.color);return d.dash?`<i class="sw ln" style="background:repeating-linear-gradient(90deg,${c} 0 5px,transparent 5px 8px)"></i>`:`<i class="sw ln" style="background:${c}"></i>`;};
+const dTag=d=>`<span class="car">${swatch(d)}${esc(d.code)}</span>`;
+
+/* ---- tooltip ---- */
+let TIP=null;
+function showTip(html,e){
+  TIP=TIP||$('#tip');TIP.innerHTML=html;TIP.hidden=false;
+  const r=TIP.getBoundingClientRect();let x=e.clientX+16,y=e.clientY+16;
+  if(x+r.width>innerWidth-8)x=e.clientX-r.width-16;
+  if(y+r.height>innerHeight-8)y=Math.max(8,innerHeight-r.height-8);
+  TIP.style.left=Math.max(8,x)+'px';TIP.style.top=Math.max(8,y)+'px';
+}
+const hideTip=()=>{TIP=TIP||$('#tip');if(TIP)TIP.hidden=true;};
+const tipRows=(title,rows)=>`<b>${title}</b>`+rows.map(r=>`<div class="r"><span>${r[0]}</span><span>${r[1]}</span></div>`).join('');
+
+/* ---- chart plumbing ---- */
+let ROS=[],CID=0;
+function watch(host,draw){
+  draw();
+  if(typeof ResizeObserver==='undefined')return;
+  let w=Math.floor(host.clientWidth);
+  const ro=new ResizeObserver(()=>{const nw=Math.floor(host.clientWidth);if(nw&&Math.abs(nw-w)>1){w=nw;draw();}});
+  ro.observe(host);ROS.push(ro);
+}
+const hostW=h=>Math.max(340,Math.floor(h.clientWidth)||900);
+
+/* ================= line / scatter chart ================= */
+function lines(host,o){
+  const cid='cp'+(++CID);
+  function draw(){
+    const W=hostW(host),H=o.h||480;
+    const m=Object.assign({l:o.yTitle?72:58,r:o.endLabels?64:24,t:o.top||16,b:o.xTitle?60:42},o.m||{});
+    const [x0,x1]=o.x;let y0,y1;
+    if(o.y){[y0,y1]=o.y;}else{
+      let lo=1e18,hi=-1e18;o.series.forEach(s=>{if(s.hidden)return;s.pts.forEach(p=>{if(p[1]!=null){lo=Math.min(lo,p[1]);hi=Math.max(hi,p[1]);}});});
+      if(lo>hi){lo=0;hi=1;}const pad=(hi-lo)*.06||1;y0=lo-pad;y1=hi+pad;
+    }
+    const X=lin(x0,x1,m.l,W-m.r),Y=o.invert?lin(y0,y1,m.t,H-m.b):lin(y0,y1,H-m.b,m.t);
+    const pw=W-m.l-m.r,ph=H-m.t-m.b;
+    let s=`<svg width="${W}" height="${H}" viewBox="0 0 ${W} ${H}" role="img" aria-label="${esc(o.aria||'Chart')}"><defs><clipPath id="${cid}"><rect x="${m.l}" y="${m.t}" width="${pw}" height="${ph}"/></clipPath></defs>`;
+    (o.bands||[]).forEach(b=>{const a=X(Math.max(b.x0,x0)),c=X(Math.min(b.x1,x1));if(c<=a)return;
+      s+=`<rect x="${a}" y="${m.t}" width="${Math.max(1,c-a)}" height="${ph}" style="fill:var(--muted);opacity:.15"/>`+(b.label?`<text class="t-muted" x="${(a+c)/2}" y="${m.t+12}" text-anchor="middle">${esc(b.label)}</text>`:'');});
+    const yt=o.yTicks||ticks(y0,y1,o.yN||7),xt=o.xTicks||ticks(x0,x1,o.xN||12);
+    yt.forEach(t=>{const yy=Y(t);if(yy<m.t-1||yy>H-m.b+1)return;s+=`<line x1="${m.l}" x2="${W-m.r}" y1="${yy}" y2="${yy}" style="stroke:var(--grid)"/><text x="${m.l-8}" y="${yy+4}" text-anchor="end">${esc((o.yFmt||String)(t))}</text>`;});
+    xt.forEach(t=>{const xx=X(t);s+=(o.xGrid?`<line x1="${xx}" x2="${xx}" y1="${m.t}" y2="${H-m.b}" style="stroke:var(--grid)"/>`:'')+`<text x="${xx}" y="${H-m.b+17}" text-anchor="middle">${esc((o.xFmt||String)(t))}</text>`;});
+    s+=`<line x1="${m.l}" x2="${W-m.r}" y1="${H-m.b}" y2="${H-m.b}" style="stroke:var(--axis)"/>`;
+    if(o.zero!=null){const zz=Y(o.zero);if(zz>=m.t&&zz<=H-m.b)s+=`<line x1="${m.l}" x2="${W-m.r}" y1="${zz}" y2="${zz}" style="stroke:var(--ink-2);stroke-width:1"/>`;}
+    (o.vlines||[]).forEach(v=>{const xx=X(v.x);s+=`<line x1="${xx}" x2="${xx}" y1="${m.t}" y2="${H-m.b}" style="stroke:var(--axis);stroke-dasharray:2 4"/>`+(v.label?`<text class="t-muted" x="${xx}" y="${m.t-4}" text-anchor="middle" style="font-size:10px">${esc(v.label)}</text>`:'');});
+    s+=`<g clip-path="url(#${cid})">`;
+    const ends=[];
+    o.series.forEach(se=>{
+      if(se.hidden)return;
+      if(se.fill){
+        const zy=Y(se.fill.base||0);
+        [['pos',v=>Math.max(v,se.fill.base||0)],['neg',v=>Math.min(v,se.fill.base||0)]].forEach(([k,fn])=>{
+          if(!se.fill[k])return;let d=`M${X(se.pts[0][0])} ${zy}`;
+          se.pts.forEach(p=>{d+=`L${X(p[0]).toFixed(1)} ${Y(fn(p[1]??0)).toFixed(1)}`;});
+          d+=`L${X(se.pts[se.pts.length-1][0])} ${zy}Z`;s+=`<path d="${d}" style="fill:${se.fill[k]};opacity:.4"/>`;});
+      }
+      if(se.dots){
+        se.pts.forEach(p=>{if(p[1]==null)return;s+=`<circle cx="${X(p[0]).toFixed(1)}" cy="${Y(p[1]).toFixed(1)}" r="${se.r||3}" style="fill:${se.color};opacity:${se.op??.8};stroke:var(--surface);stroke-width:.8"/>`;});
+        if(se.tag&&se.pts.length){const p=se.pts[se.pts.length-1];if(p[1]!=null)s+=`<text x="${X(p[0])+(se.r||3)+5}" y="${Y(p[1])+4}" style="fill:var(--ink)">${esc(se.tag)}</text>`;}
+      }else{
+        let d='',pen=false;
+        se.pts.forEach(p=>{if(p[1]==null){pen=false;return;}d+=(pen?'L':'M')+X(p[0]).toFixed(1)+' '+Y(p[1]).toFixed(1);pen=true;});
+        if(d)s+=`<path d="${d}" style="fill:none;stroke:${se.color};stroke-width:${se.w||2};stroke-linejoin:round;stroke-linecap:round;opacity:${se.op??1}${se.dash?';stroke-dasharray:6 4':''}"/>`;
+        if(o.endLabels&&se.label){let last=null;for(let i=se.pts.length-1;i>=0;i--)if(se.pts[i][1]!=null){last=se.pts[i];break;}if(last)ends.push({y:Y(last[1]),t:se.label,c:se.color});}
+      }
+    });
+    (o.marks||[]).forEach(mk=>{if(mk.y==null)return;const cx=X(mk.x),cy=Y(mk.y);
+      s+=mk.kind==='tri'?`<path d="M${cx} ${cy-6}L${cx+5.5} ${cy+4}L${cx-5.5} ${cy+4}Z" style="fill:${mk.color};stroke:var(--surface);stroke-width:1.5"/>`:`<circle cx="${cx}" cy="${cy}" r="${mk.r||4.5}" style="fill:${mk.color};stroke:var(--surface);stroke-width:1.5"/>`;});
+    s+='</g>';
+    if(o.endLabels)spread(ends,12).forEach(e=>{s+=`<text x="${W-m.r+7}" y="${e.y+4}" style="fill:${e.c}">${esc(e.t)}</text>`;});
+    if(o.xTitle)s+=`<text class="t-muted" x="${m.l+pw/2}" y="${H-10}" text-anchor="middle">${esc(o.xTitle)}</text>`;
+    if(o.yTitle)s+=`<text class="t-muted" transform="translate(14 ${m.t+ph/2}) rotate(-90)" text-anchor="middle">${esc(o.yTitle)}</text>`;
+    s+=`<line class="cross" x1="0" x2="0" y1="${m.t}" y2="${H-m.b}" style="display:none;stroke:var(--ink-2);stroke-dasharray:3 3"/><circle class="nh" r="7" style="display:none;fill:none;stroke:var(--ink);stroke-width:2"/></svg>`;
+    host.innerHTML=s;
+    const svg=host.firstChild,cross=svg.querySelector('.cross'),nh=svg.querySelector('.nh');
+    const place=xv=>{if(xv==null){cross.style.display='none';return;}cross.setAttribute('x1',X(xv));cross.setAttribute('x2',X(xv));cross.style.display='';};
+    host._cross=place;
+    const leave=()=>{cross.style.display='none';nh.style.display='none';hideTip();if(o.onLeave)o.onLeave();};
+    const defTip=xv=>{
+      const rows=[];o.series.forEach(se=>{if(se.hidden||se.noTip||se.dots||!se.label)return;
+        se._m=se._m||new Map(se.pts.filter(p=>p[1]!=null).map(p=>[p[0],p[1]]));
+        const v=se._m.get(xv);if(v!=null)rows.push([se.color,se.label,v,se.dash]);});
+      if(!rows.length)return null;rows.sort((a,b)=>a[2]-b[2]);
+      return tipRows((o.tipTitle||(v=>'x = '+v))(xv),rows.slice(0,o.tipMax||22).map(r=>[`<i class="sw ln" style="background:${r[0]}"></i>${esc(r[1])}`,(o.tipFmt||o.yFmt||String)(r[2])]));
+    };
+    const move=e=>{
+      const r=svg.getBoundingClientRect(),px=(e.clientX-r.left)*(W/r.width),py=(e.clientY-r.top)*(H/r.height);
+      if(px<m.l||px>W-m.r||py<m.t||py>H-m.b){leave();return;}
+      if(o.nearest){
+        let best=null,bd=22;o.series.forEach(se=>{if(se.hidden||!se.dots)return;se.pts.forEach(p=>{if(p[1]==null)return;const d=Math.hypot(X(p[0])-px,Y(p[1])-py);if(d<bd){bd=d;best=p;}});});
+        if(best){nh.setAttribute('cx',X(best[0]));nh.setAttribute('cy',Y(best[1]));nh.style.display='';showTip(best[2],e);}else{nh.style.display='none';hideTip();}return;
+      }
+      let xv=x0+(px-m.l)/pw*(x1-x0);
+      if(o.snap)xv=clamp(Math.round((xv-x0)/o.snap)*o.snap+x0,x0,x1);
+      place(xv);if(o.onMove)o.onMove(xv);
+      const html=o.tip?o.tip(xv):defTip(xv);if(html)showTip(html,e);else hideTip();
+    };
+    svg.addEventListener('pointermove',move);svg.addEventListener('pointerdown',move);svg.addEventListener('pointerleave',leave);
+  }
+  watch(host,draw);
+  return{redraw:()=>host.isConnected&&host.clientWidth&&host._redraw&&0};
+}
+
+/* ================= horizontal bars / dots ================= */
+function hbars(host,o){
+  function draw(){
+    const W=hostW(host),rh=o.rowH||28,lw=o.labelW||120,vw=o.valueW||78;
+    const m={l:lw,r:vw+10,t:o.top||12,b:o.xTitle?58:40};
+    const H=m.t+o.rows.length*rh+m.b;
+    let lo=o.x?o.x[0]:Math.min(0,...o.rows.map(r=>r.value??0)),hi=o.x?o.x[1]:Math.max(...o.rows.map(r=>r.value??0));
+    if(hi<=lo)hi=lo+1;
+    const X=lin(lo,hi,m.l,W-m.r),base=o.dots?m.l:X(clamp(0,lo,hi));
+    let s=`<svg width="${W}" height="${H}" viewBox="0 0 ${W} ${H}" role="img" aria-label="${esc(o.aria||'Chart')}">`;
+    (o.xTicks||ticks(lo,hi,o.xN||8)).forEach(t=>{const xx=X(t);s+=`<line x1="${xx}" x2="${xx}" y1="${m.t}" y2="${H-m.b}" style="stroke:var(--grid)"/><text x="${xx}" y="${H-m.b+17}" text-anchor="middle">${esc((o.xFmt||String)(t))}</text>`;});
+    if(!o.dots&&lo<0&&hi>0)s+=`<line x1="${X(0)}" x2="${X(0)}" y1="${m.t}" y2="${H-m.b}" style="stroke:var(--ink-2)"/>`;
+    if(o.ref)s+=`<line x1="${X(o.ref.x)}" x2="${X(o.ref.x)}" y1="${m.t}" y2="${H-m.b}" style="stroke:var(--ink-2);stroke-dasharray:4 3"/><text class="t-muted" x="${X(o.ref.x)+4}" y="${m.t+10}" style="font-size:10px">${esc(o.ref.label)}</text>`;
+    o.rows.forEach((r,i)=>{
+      const y=m.t+i*rh,cy=y+rh/2;
+      s+=`<g class="rw" data-i="${i}"><rect x="0" y="${y}" width="${W}" height="${rh}" style="fill:transparent"/>`;
+      s+=`<line x1="${m.l}" x2="${W-m.r}" y1="${cy}" y2="${cy}" style="stroke:var(--grid);opacity:${o.dots?1:.0}"/>`;
+      s+=`<text x="${lw-10}" y="${cy+4}" text-anchor="end" style="fill:var(--ink)">${esc(r.label)}</text>`;
+      if(r.value!=null){
+        const vx=X(clamp(r.value,lo,hi));
+        if(o.dots)s+=`<circle cx="${vx}" cy="${cy}" r="${o.r||6}" style="fill:${r.color};stroke:var(--surface);stroke-width:2"/>`;
+        else s+=`<rect x="${Math.min(base,vx)}" y="${y+4}" width="${Math.max(1.5,Math.abs(vx-base))}" height="${rh-8}" rx="2" style="fill:${r.color}"/>`;
+        s+=`<text x="${(o.dots?vx+(o.r||6)+7:Math.max(base,vx)+7)}" y="${cy+4}" style="fill:var(--ink)">${esc(r.text!=null?r.text:(o.fmt||String)(r.value))}</text>`;
+      }else s+=`<text x="${m.l+6}" y="${cy+4}" class="t-muted">${esc(r.text||'no data')}</text>`;
+      s+='</g>';
+    });
+    s+=`<line x1="${m.l}" x2="${W-m.r}" y1="${H-m.b}" y2="${H-m.b}" style="stroke:var(--axis)"/>`;
+    if(o.xTitle)s+=`<text class="t-muted" x="${m.l+(W-m.l-m.r)/2}" y="${H-10}" text-anchor="middle">${esc(o.xTitle)}</text>`;
+    s+='</svg>';host.innerHTML=s;
+    $$('.rw',host).forEach(g=>{const r=o.rows[+g.dataset.i];if(!r.tip)return;const mv=e=>showTip(r.tip,e);g.addEventListener('pointermove',mv);g.addEventListener('pointerdown',mv);g.addEventListener('pointerleave',hideTip);});
+  }
+  watch(host,draw);
+}
+
+/* ================= box + strip ================= */
+function strip(host,o){
+  function draw(){
+    const W=hostW(host),rh=o.rowH||34,lw=o.labelW||110,m={l:lw,r:24,t:12,b:o.xTitle?58:40},H=m.t+o.rows.length*rh+m.b;
+    const X=lin(o.x[0],o.x[1],m.l,W-m.r);
+    let s=`<svg width="${W}" height="${H}" viewBox="0 0 ${W} ${H}" role="img" aria-label="${esc(o.aria||'Chart')}">`;
+    ticks(o.x[0],o.x[1],10).forEach(t=>{s+=`<line x1="${X(t)}" x2="${X(t)}" y1="${m.t}" y2="${H-m.b}" style="stroke:var(--grid)"/><text x="${X(t)}" y="${H-m.b+17}" text-anchor="middle">${esc((o.xFmt||String)(t))}</text>`;});
+    o.rows.forEach((r,i)=>{
+      const cy=m.t+i*rh+rh/2,v=r.vals;
+      s+=`<g class="rw" data-i="${i}"><rect x="0" y="${cy-rh/2}" width="${W}" height="${rh}" style="fill:transparent"/><text x="${lw-10}" y="${cy+4}" text-anchor="end" style="fill:var(--ink)">${esc(r.label)}</text>`;
+      if(v.length>=4){
+        const sv=[...v].sort((a,b)=>a-b),q1=quant(sv,.25),q3=quant(sv,.75),md=quant(sv,.5),iqr=q3-q1;
+        const lo=sv.find(x=>x>=q1-1.5*iqr),hi=[...sv].reverse().find(x=>x<=q3+1.5*iqr);
+        s+=`<line x1="${X(lo)}" x2="${X(hi)}" y1="${cy}" y2="${cy}" style="stroke:${r.color};stroke-width:1.5"/>`;
+        s+=`<rect x="${X(q1)}" y="${cy-9}" width="${Math.max(1,X(q3)-X(q1))}" height="18" rx="2" style="fill:${r.color};opacity:.28;stroke:${r.color}"/>`;
+        v.forEach((x,k)=>{const j=((k*37)%11-5)/5*6;if(x<o.x[0]||x>o.x[1])return;s+=`<circle cx="${X(x)}" cy="${cy+j}" r="2" style="fill:${r.color};opacity:.7"/>`;});
+        s+=`<line x1="${X(md)}" x2="${X(md)}" y1="${cy-11}" y2="${cy+11}" style="stroke:var(--ink);stroke-width:2.5"/>`;
+      }else if(v.length){
+        v.forEach(x=>{s+=`<circle cx="${X(x)}" cy="${cy}" r="5" style="fill:${r.color};stroke:var(--surface);stroke-width:1.5"/>`;});
+        const md=median(v);s+=`<line x1="${X(md)}" x2="${X(md)}" y1="${cy-11}" y2="${cy+11}" style="stroke:var(--ink);stroke-width:2.5"/>`;
+      }else s+=`<text x="${m.l+6}" y="${cy+4}" class="t-muted">no data</text>`;
+      s+='</g>';
+    });
+    s+=`<line x1="${m.l}" x2="${W-m.r}" y1="${H-m.b}" y2="${H-m.b}" style="stroke:var(--axis)"/>`;
+    if(o.xTitle)s+=`<text class="t-muted" x="${m.l+(W-m.l-m.r)/2}" y="${H-10}" text-anchor="middle">${esc(o.xTitle)}</text>`;
+    s+='</svg>';host.innerHTML=s;
+    $$('.rw',host).forEach(g=>{const r=o.rows[+g.dataset.i];const mv=e=>showTip(r.tip||'',e);g.addEventListener('pointermove',mv);g.addEventListener('pointerdown',mv);g.addEventListener('pointerleave',hideTip);});
+  }
+  watch(host,draw);
+}
+
+/* ================= track map ================= */
+function trackMap(host,o){
+  function draw(){
+    const W=Math.min(hostW(host),o.maxW||940);
+    const xs=o.pts.map(p=>p.x),ys=o.pts.map(p=>-p.y);
+    const x0=Math.min(...xs),x1=Math.max(...xs),y0=Math.min(...ys),y1=Math.max(...ys),pad=40;
+    const k=Math.min((W-2*pad)/(x1-x0||1),(o.maxH||620)/((y1-y0)||1)),H=Math.round((y1-y0)*k+2*pad),ox=(W-(x1-x0)*k)/2;
+    const P=p=>[ox+(p.x-x0)*k,pad+(-p.y-y0)*k];
+    let s=`<svg width="${W}" height="${H}" viewBox="0 0 ${W} ${H}" role="img" aria-label="${esc(o.aria||'Track map')}" style="margin:0 auto">`;
+    s+=`<polyline points="${o.pts.map(p=>P(p).map(v=>v.toFixed(1)).join(',')).join(' ')}" style="fill:none;stroke:var(--axis);stroke-width:12;stroke-linejoin:round;stroke-linecap:round;opacity:.5"/>`;
+    for(let i=1;i<o.pts.length;i++){const a=P(o.pts[i-1]),b=P(o.pts[i]);s+=`<line x1="${a[0].toFixed(1)}" y1="${a[1].toFixed(1)}" x2="${b[0].toFixed(1)}" y2="${b[1].toFixed(1)}" style="stroke:${o.pts[i].c};stroke-width:6;stroke-linecap:round"/>`;}
+    (o.labels||[]).forEach(l=>{const p=P(o.pts[clamp(l.i,0,o.pts.length-1)]);s+=`<circle cx="${p[0]}" cy="${p[1]}" r="11" style="fill:var(--surface);stroke:var(--ink-2)"/><text x="${p[0]}" y="${p[1]+4}" text-anchor="middle" style="fill:var(--ink);font-size:10px">${esc(l.t)}</text>`;});
+    const sp=P(o.pts[0]);s+=`<rect x="${sp[0]-3}" y="${sp[1]-14}" width="6" height="28" style="fill:var(--ink)"/><text x="${sp[0]+10}" y="${sp[1]-16}" style="fill:var(--ink)">Start / finish</text></svg>`;
+    host.innerHTML=s;
+  }
+  watch(host,draw);
+}
+
+/* ================= data preparation (everything derives from race.json) ================= */
+function prepare(raw){
+  const meta=raw.meta||{},total=meta.total_laps||Math.max(0,...Object.values(raw.laps).map(a=>a.length?a[a.length-1][0]:0));
+  const kind=meta.kind||'race',raceLike=kind==='race'||kind==='sprint';
+  const res=(raw.results||[]).map(r=>({...r}));
+  res.forEach(r=>{
+    if(Array.isArray(r.dur)){r.q=r.dur;const v=r.dur.filter(x=>typeof x==='number');r.dur=v.length?v[v.length-1]:null;}
+    if(Array.isArray(r.gap)){const v=r.gap.filter(x=>x!=null&&x!=='');r.gap=v.length?v[v.length-1]:null;}
+  });
+  if(!res.length){
+    /* no official classification: rank by best lap (practice, qualifying) or by laps and time (races) */
+    const sc=raw.drivers.map(d=>{const rows=(raw.laps[d.n]||[]).filter(l=>l[2]!=null&&l[0]>1);
+      const best=rows.length?Math.min(...rows.map(l=>l[2])):null,all=raw.laps[d.n]||[];
+      const last=all.length?all[all.length-1]:null,tot=all.reduce((a,l)=>a+(l[2]||0),0);
+      return{n:d.n,best,laps:all.length,tot};});
+    if(raceLike)sc.sort((a,b)=>b.laps-a.laps||a.tot-b.tot);else sc.sort((a,b)=>(a.best==null)-(b.best==null)||a.best-b.best);
+    sc.forEach((s,i)=>res.push({n:s.n,pos:i+1,grid:null,laps:s.laps,dur:raceLike?(i===0?s.tot:null):s.best,gap:raceLike?null:(s.best!=null&&sc[0].best!=null?s.best-sc[0].best:null),dnf:false,dns:false,dsq:false,synthetic:true}));
+  }
+  const R=new Map(res.map(r=>[r.n,r]));
+  const drivers=raw.drivers.map(d=>({...d,color:d.color||'#888888'}));
+  const rank=d=>{const r=R.get(d.n);return r&&r.pos!=null?r.pos:99;};
+  drivers.sort((a,b)=>rank(a)-rank(b));
+  const seen={};drivers.forEach(d=>{d.res=R.get(d.n)||{};d.ti=seen[d.team]=(seen[d.team]==null?0:seen[d.team]+1);d.dash=d.ti%2===1;d.finish=rank(d);});
+  const byN=new Map(drivers.map(d=>[d.n,d]));
+
+  /* laps */
+  drivers.forEach(d=>{
+    const rows=(raw.laps[d.n]||[]).slice().sort((a,b)=>a[0]-b[0]);
+    d.laps=rows.map(r=>({n:d.n,lap:r[0],start:r[1]?pd(r[1]):null,dur:r[2],s1:r[3],s2:r[4],s3:r[5],i1:r[6],i2:r[7],st:r[8],pitOut:!!r[9]}));
+    d.laps.forEach((l,i)=>{const nx=d.laps[i+1];l.end=nx&&nx.start!=null?nx.start:(l.start!=null&&l.dur!=null?l.start+l.dur*1000:null);});
+    d.lapBy=new Map(d.laps.map(l=>[l.lap,l]));
+  });
+  const starts=drivers.map(d=>d.lapBy.get(1)&&d.lapBy.get(1).start).filter(x=>x!=null);
+  let t0=starts.length?Math.min(...starts):null;
+  if(t0==null){const s2=drivers.map(d=>d.lapBy.get(2)&&d.lapBy.get(2).start).filter(x=>x!=null);t0=(s2.length?Math.min(...s2):Date.now())-95000;}
+  const leaderEnd=[null];
+  for(let L=1;L<=total;L++){const e=drivers.map(d=>d.lapBy.get(L)&&d.lapBy.get(L).end).filter(x=>x!=null);leaderEnd[L]=e.length?Math.min(...e):null;}
+  const lapAtTime=ms=>{for(let L=1;L<=total;L++)if(leaderEnd[L]!=null&&leaderEnd[L]>=ms)return L;return total;};
+
+  /* pit stops */
+  const pits=(raw.pits||[]).map(p=>({n:p[0],lap:p[1],date:p[2]?pd(p[2]):null,lane:p[3],stop:p[4]})).filter(p=>byN.has(p.n));
+  pits.forEach(p=>{const d=byN.get(p.n),l=d.lapBy.get(p.lap);if(l)l.pitIn=true;const o=d.lapBy.get(p.lap+1);if(o)o.pitOut=true;});
+
+  /* safety car / VSC windows from race control */
+  const rc=(raw.rc||[]).map(r=>({date:r[0]?pd(r[0]):null,lap:r[1],cat:r[2]||'',flag:r[3]||'',scope:r[4]||'',sector:r[5],n:r[6],msg:r[7]||''})).sort((a,b)=>(a.date||0)-(b.date||0));
+  const windows=[];let open=null;
+  rc.forEach(r=>{
+    const u=r.msg.toUpperCase(),lap=r.lap||(r.date?lapAtTime(r.date):1);
+    if(u.includes('VIRTUAL SAFETY CAR DEPLOYED')){open={kind:'VSC',lap0:lap,t0:r.date};}
+    else if(u.includes('VIRTUAL SAFETY CAR ENDING')&&open&&open.kind==='VSC'){open.lap1=lap;open.t1=r.date;windows.push(open);open=null;}
+    else if(u.includes('SAFETY CAR DEPLOYED')){open={kind:'SC',lap0:lap,t0:r.date};}
+    else if(u.includes('SAFETY CAR IN THIS LAP')&&open&&open.kind==='SC'){open.lap1=lap;open.t1=Math.max(r.date||0,leaderEnd[lap]||0);windows.push(open);open=null;}
+  });
+  if(open){open.lap1=total;open.t1=leaderEnd[total];windows.push(open);}
+  const neutral=new Set();windows.forEach(w=>{for(let L=w.lap0;L<=w.lap1;L++)neutral.add(L);});
+
+  /* stints */
+  const stints=[];
+  (raw.stints||[]).forEach(r=>{const d=byN.get(r[0]);if(!d)return;
+    stints.push({n:r[0],stint:r[1],comp:String(r[2]||'UNKNOWN').toUpperCase(),from:r[3],to:r[4]==null?total:r[4],age0:r[5]||0});});
+  stints.sort((a,b)=>a.n-b.n||a.stint-b.stint);
+  drivers.forEach(d=>{
+    d.stints=stints.filter(s=>s.n===d.n);
+    d.laps.forEach(l=>{const s=d.stints.find(s=>l.lap>=s.from&&l.lap<=s.to);if(s){l.comp=s.comp;l.age=s.age0+(l.lap-s.from);}});
+  });
+
+  /* clean laps */
+  drivers.forEach(d=>{
+    d.laps.forEach(l=>{l.neutral=neutral.has(l.lap);l.excl=l.lap===1||!!l.pitIn||!!l.pitOut||l.neutral||l.dur==null;});
+    const base=d.laps.filter(l=>!l.excl).map(l=>l.dur),med0=raceLike?median(base):(base.length?Math.min(...base):null);
+    d.laps.forEach(l=>{l.clean=!l.excl&&med0!=null&&l.dur<=med0*1.07;});
+    d.clean=d.laps.filter(l=>l.clean);
+    const cd=d.clean.map(l=>l.dur);
+    d.med=median(cd);d.avg=mean(cd);d.sd=sd(cd);
+    const timed=d.laps.filter(l=>l.dur!=null&&l.lap>1);
+    d.bestL=timed.length?timed.reduce((a,b)=>b.dur<a.dur?b:a):null;
+    d.best=d.bestL?d.bestL.dur:null;
+  });
+  const fieldMed=[null];
+  for(let L=1;L<=total;L++){const v=drivers.map(d=>{const l=d.lapBy.get(L);return l&&l.clean?l.dur:null;}).filter(x=>x!=null);fieldMed[L]=v.length>=3?median(v):null;}
+
+  /* positions, gaps, intervals */
+  const posBy=new Map();
+  (raw.positions||[]).forEach(p=>{if(!posBy.has(p[0]))posBy.set(p[0],[]);posBy.get(p[0]).push([pd(p[1]),p[2]]);});
+  posBy.forEach(a=>a.sort((x,y)=>x[0]-y[0]));
+  const posAt=(n,ms)=>{const a=posBy.get(n);if(!a||ms==null)return null;let lo=0,hi=a.length-1,r=null;while(lo<=hi){const m=(lo+hi)>>1;if(a[m][0]<=ms){r=a[m][1];lo=m+1;}else hi=m-1;}return r;};
+  for(let L=1;L<=total;L++){
+    const row=drivers.map(d=>({d,l:d.lapBy.get(L)})).filter(x=>x.l&&x.l.end!=null).sort((a,b)=>a.l.end-b.l.end);
+    row.forEach((x,i)=>{
+      x.l.rank=i+1;x.l.gap=leaderEnd[L]!=null?(x.l.end-leaderEnd[L])/1000:null;
+      x.l.int=i?(x.l.end-row[i-1].l.end)/1000:null;
+      x.l.pos=posAt(x.d.n,x.l.end);if(x.l.pos==null)x.l.pos=i+1;
+    });
+  }
+  drivers.forEach(d=>{d.grid=d.res.grid!=null?d.res.grid:(posBy.get(d.n)?posBy.get(d.n)[0][1]:null);});
+
+  /* pit enrichment */
+  pits.forEach(p=>{
+    const d=byN.get(p.n),a=d.lapBy.get(p.lap),b=d.lapBy.get(p.lap+1),pre=d.lapBy.get(p.lap-1),post=d.lapBy.get(p.lap+2);
+    p.code=d.code;p.d=d;p.from=a&&a.comp;p.to=(b&&b.comp)||(d.lapBy.get(p.lap+2)&&d.lapBy.get(p.lap+2).comp);
+    p.neutral=neutral.has(p.lap)||neutral.has(p.lap+1);
+    p.posBefore=pre?pre.pos:d.grid;p.posAfter=post?post.pos:(b?b.pos:null);
+    p.loss=a&&b&&a.dur!=null&&b.dur!=null&&d.med!=null?a.dur+b.dur-2*d.med:null;
+  });
+  pits.sort((a,b)=>a.lap-b.lap||a.n-b.n);
+
+  /* stint statistics */
+  stints.forEach(s=>{
+    const d=byN.get(s.n);s.d=d;s.laps=d.laps.filter(l=>l.lap>=s.from&&l.lap<=s.to);
+    s.clean=s.laps.filter(l=>l.clean);
+    s.avg=mean(s.clean.map(l=>l.dur));s.best=s.clean.length?Math.min(...s.clean.map(l=>l.dur)):null;
+    s.reg=regress(s.clean.map(l=>l.age),s.clean.map(l=>l.dur));
+  });
+
+  /* sectors and speeds */
+  const SEC=['s1','s2','s3'],bestSec={};
+  drivers.forEach(d=>{
+    d.bs={};SEC.forEach(k=>{const v=d.laps.filter(l=>l[k]!=null&&l.lap>1&&!l.neutral).map(l=>l[k]);d.bs[k]=v.length?Math.min(...v):null;});
+    d.ideal=SEC.every(k=>d.bs[k]!=null)?d.bs.s1+d.bs.s2+d.bs.s3:null;
+    ['i1','i2','st'].forEach(k=>{const v=d.laps.filter(l=>l[k]!=null).map(l=>l[k]);d['max_'+k]=v.length?Math.max(...v):null;});
+  });
+  SEC.forEach(k=>{const v=drivers.map(d=>d.bs[k]).filter(x=>x!=null);bestSec[k]=v.length?Math.min(...v):null;});
+
+  /* weather */
+  const weather=(raw.weather||[]).map(w=>({ms:pd(w[0]),air:w[1],track:w[2],hum:w[3],press:w[4],rain:w[5],wind:w[6],dir:w[7]}));
+
+  return{raw,meta,kind,raceLike,total,drivers,byN,R,res,pits,rc,windows,neutral,stints,fieldMed,leaderEnd,t0,bestSec,weather,telCache:{},
+    sorted:fn=>[...drivers].sort(fn)};
+}
+
+/* ================= telemetry resampling ================= */
+function telRawDist(t){let dd=0;for(let i=1;i<t.t.length;i++){if(t.t[i]>t.dur)break;dd+=(t.speed[i-1]+t.speed[i])/2/3.6*(t.t[i]-t.t[i-1]);}return dd;}
+function telGrid(t,Lref){
+  const idx=[];for(let i=0;i<t.t.length;i++)if(t.t[i]>=0&&t.t[i]<=t.dur+0.001)idx.push(i);
+  if(idx.length<20)return null;
+  const T=idx.map(i=>t.t[i]);
+  const dist=[0];for(let k=1;k<idx.length;k++)dist.push(dist[k-1]+(t.speed[idx[k-1]]+t.speed[idx[k]])/2/3.6*(T[k]-T[k-1]));
+  const sf=Lref/dist[dist.length-1],tf=t.dur/T[T.length-1],D2=dist.map(v=>v*sf),step=5,G=Math.floor(Lref/step);
+  const g={x:[],sp:[],thr:[],brk:[],gear:[],rpm:[],drs:[],tm:[],px:[],py:[],L:Lref,step};
+  let j=0;
+  for(let k=0;k<=G;k++){
+    const dx=k*step;while(j<D2.length-2&&D2[j+1]<dx)j++;
+    const a=D2[j],b=D2[j+1],w=b>a?clamp((dx-a)/(b-a),0,1):0,ia=idx[j],ib=idx[j+1],near=w<.5?ia:ib;
+    const lerp=arr=>arr[ia]+(arr[ib]-arr[ia])*w;
+    g.x.push(dx);g.sp.push(lerp(t.speed));g.thr.push(lerp(t.thr));g.rpm.push(lerp(t.rpm));
+    g.brk.push(t.brk[near]>0?1:0);g.gear.push(t.gear[near]);g.drs.push(t.drs[near]>=10?1:0);
+    g.tm.push((T[j]+(T[j+1]-T[j])*w)*tf);
+    g.px.push(t.x&&t.x[ia]!=null&&t.x[ib]!=null?lerp(t.x):null);g.py.push(t.y&&t.y[ia]!=null&&t.y[ib]!=null?lerp(t.y):null);
+  }
+  return g;
+}
+function detectCorners(g){
+  const n=g.sp.length,sm=g.sp.map((_,i)=>{let s=0,c=0;for(let k=-3;k<=3;k++){const q=g.sp[i+k];if(q!=null){s+=q;c++;}}return s/c;});
+  const cand=[];
+  for(let i=4;i<n-4;i++){
+    let isMin=true;for(let k=-20;k<=20;k++){const q=sm[i+k];if(q!=null&&q<sm[i]-1e-9){isMin=false;break;}}
+    if(!isMin)continue;
+    let lm=sm[i];for(let k=i-1;k>=Math.max(0,i-300);k--){if(sm[k]<sm[i])break;lm=Math.max(lm,sm[k]);}
+    let rm=sm[i];for(let k=i+1;k<Math.min(n,i+300);k++){if(sm[k]<sm[i])break;rm=Math.max(rm,sm[k]);}
+    if(Math.min(lm,rm)-sm[i]>=30)cand.push({i,v:sm[i]});
+  }
+  const out=[];cand.forEach(c=>{const last=out[out.length-1];if(last&&c.i-last.i<30){if(c.v<last.v)out[out.length-1]=c;}else out.push(c);});
+  return out;
+}
+
+/* ================= shared page pieces ================= */
+const S={M:null,sel:new Set(),basis:'abs',show:'clean',cap:'auto',comp:null,a:null,b:null,drv:null,spd:'st',rcCat:'all',rcText:'',mapA:'speed',loadMsg:''};
+const panel=(id,title,note,o={})=>`<section class="panel ${o.cls||''}"><div class="ph"><h3>${title}</h3>${note?`<span class="note">${note}</span>`:''}</div>${o.pre||''}<div class="${o.body||'chart'}" id="${id}" style="${o.h?'min-height:'+o.h+'px':''}"></div>${o.post||''}</section>`;
+const segHTML=(name,items,cur)=>`<div class="seg" data-seg="${name}" role="group">${items.map(i=>`<button type="button" data-v="${i[0]}" aria-pressed="${String(cur)===String(i[0])}">${i[1]}</button>`).join('')}</div>`;
+const ctl=(label,html)=>`<div class="ctl-g"><div class="lbl">${label}</div>${html}</div>`;
+const winBands=M=>M.windows.map(w=>({x0:w.lap0-.5,x1:w.lap1+.5,label:w.kind}));
+const dseries=(d,pts,extra={})=>({id:d.n,label:d.code,color:tcol(d.color),dash:d.dash,pts,...extra});
+const pickerHTML=()=>`<div class="picker" id="picker"></div>`;
+function bindPicker(){
+  const el=$('#picker');if(!el)return;const M=S.M;
+  el.innerHTML=`<div class="presets"><span class="lbl">Drivers</span>${[['Top 3',3],['Top 5',5],['Top 10',10],['All',99],['None',0]].map(p=>`<button type="button" class="btn" data-k="${p[1]}">${p[0]}</button>`).join('')}</div>
+  <div class="dchips">${M.drivers.map(d=>`<button type="button" class="dchip" data-n="${d.n}" aria-pressed="${S.sel.has(d.n)}" title="${esc(d.name)} · ${esc(d.team)} · P${d.finish<99?d.finish:'–'}">${swatch(d)}${esc(d.code)}</button>`).join('')}</div>`;
+  $$('[data-k]',el).forEach(b=>b.addEventListener('click',()=>{S.sel=new Set(M.drivers.slice(0,+b.dataset.k).map(d=>d.n));rerender();}));
+  $$('.dchip',el).forEach(b=>b.addEventListener('click',()=>{const n=+b.dataset.n;S.sel.has(n)?S.sel.delete(n):S.sel.add(n);rerender();}));
+}
+const selDrivers=()=>S.M.drivers.filter(d=>S.sel.has(d.n));
+const empty=(t)=>`<div class="empty">${t}</div>`;
+const resultText=d=>{const r=d.res;if(r.dns)return'DNS';if(r.dsq)return'DSQ';if(r.dnf)return'DNF';if(d.finish===1)return S.M&&!S.M.raceLike?fmtLap(r.dur):fmtHMS(r.dur);return typeof r.gap==='number'?'+'+f3(r.gap):(r.gap||'–');};
+const stratHTML=d=>d.stints.map(s=>`<span class="stp">${chip(s.comp)}<span class="mono">${s.to-s.from+1}</span></span>`).join('');
+
+/* ================= OVERVIEW ================= */
+const qFmt=v=>typeof v==='number'?fmtLap(v):'–';
+function pgOverview(M){
+  const R=M.raceLike;
+  const top=M.drivers.find(d=>d.finish===1)||M.drivers[0];
+  const fl=M.sorted((a,b)=>(a.best==null?1e9:a.best)-(b.best==null?1e9:b.best))[0];
+  const cls=M.drivers.filter(d=>d.grid!=null&&d.finish<99&&!d.res.dnf&&!d.res.dns&&!d.res.dsq);
+  const gain=[...cls].sort((a,b)=>(b.grid-b.finish)-(a.grid-a.finish))[0];
+  const sq=M.pits.filter(p=>p.stop!=null).sort((a,b)=>a.stop-b.stop)[0],lq=M.pits.filter(p=>p.lane!=null).sort((a,b)=>a.lane-b.lane)[0];
+  const ret=M.drivers.filter(d=>d.res.dnf||d.res.dns);
+  const nl=[...M.neutral].sort((a,b)=>a-b),totalLaps=M.drivers.reduce((a,d)=>a+d.laps.length,0);
+  const kpi=(l,v,small,sub)=>`<div class="kpi"><div class="lbl">${l}</div><div class="v">${v}<small>${small||''}</small></div><div class="s">${sub||''}</div></div>`;
+  const kp=R?`<div class="kpis">${
+    kpi(M.kind==='sprint'?'Sprint winner':'Winner',esc(top.code),'',`${esc(top.team)} · ${fmtHMS(top.res.dur)}`)+
+    kpi('Fastest lap',fmtLap(fl.best),'',`${esc(fl.code)} on lap ${fl.bestL?fl.bestL.lap:'–'}`)+
+    (gain?kpi('Most places gained',(gain.grid-gain.finish>0?'+':'')+(gain.grid-gain.finish),'',`${esc(gain.code)}, P${gain.grid} to P${gain.finish}`):'')+
+    kpi('Pit stops',String(M.pits.length),'',sq?`Quickest ${f2(sq.stop)} s stationary, ${esc(sq.code)} L${sq.lap}`:(lq?`Quickest ${f2(lq.lane)} s in the lane, ${esc(lq.code)} L${lq.lap}`:'No stops recorded'))+
+    kpi('Neutralised laps',String(nl.length),'',M.windows.length?M.windows.map(w=>`${w.kind} laps ${w.lap0}–${w.lap1}`).join(', '):'No Safety Car or VSC')+
+    kpi('Retirements',String(ret.length),'',ret.length?ret.map(d=>esc(d.code)).join(', '):'All cars finished')}</div>`
+  :`<div class="kpis">${
+    kpi('Fastest',esc(top.code),'',`${esc(top.team)} · ${fmtLap(top.best!=null?top.best:top.res.dur)}`)+
+    kpi('Gap P1 to P2',(M.drivers[1]&&M.drivers[1].best!=null&&top.best!=null)?f3(M.drivers[1].best-top.best):'–','s',M.drivers[1]?`${esc(top.code)} to ${esc(M.drivers[1].code)}`:'')+
+    kpi('Drivers',String(M.drivers.filter(d=>d.laps.length).length),'','Took part in this session')+
+    kpi('Timed laps',String(M.drivers.reduce((a,d)=>a+d.laps.filter(l=>l.dur!=null).length,0)),'',`${totalLaps} laps in total`)+
+    kpi('Stints',String(M.stints.length),'',[...new Set(M.stints.map(s=>s.comp))].map(c=>chip(c)).join(' ')||'No tyre data')}</div>`;
+  const hasQ=M.drivers.some(d=>d.res.q);
+  const rows=M.drivers.map(d=>{const dp=d.grid!=null&&d.finish<99?d.grid-d.finish:null;
+    if(R)return`<tr><td class="num">${d.finish<99?d.finish:'–'}</td><td>${dTag(d)} <span class="dim">${esc(d.name)}</span></td><td class="dim">${esc(d.team)}</td><td class="num">${d.grid==null?'–':d.grid}</td>
+    <td class="num ${dp>0?'up':dp<0?'down':''}">${dp==null||d.res.dnf?'–':dp>0?'▲'+dp:dp<0?'▼'+(-dp):'='}</td><td class="num">${d.res.laps==null?d.laps.length:d.res.laps}</td>
+    <td class="num">${resultText(d)}</td><td class="num">${fmtLap(d.best)}</td><td class="num">${fmtLap(d.med)}</td><td class="num">${M.pits.filter(p=>p.n===d.n).length}</td><td>${stratHTML(d)}</td></tr>`;
+    return`<tr><td class="num">${d.finish<99?d.finish:'–'}</td><td>${dTag(d)} <span class="dim">${esc(d.name)}</span></td><td class="dim">${esc(d.team)}</td><td class="num">${fmtLap(d.best)}</td><td class="num">${d.finish===1||d.best==null||top.best==null?'':'+'+f3(d.best-top.best)}</td>
+    ${hasQ?[0,1,2].map(i=>`<td class="num">${d.res.q?qFmt(d.res.q[i]):''}</td>`).join(''):''}<td class="num">${d.laps.filter(l=>l.dur!=null).length}</td><td>${stratHTML(d)}</td></tr>`;}).join('');
+  const head=R?`<th class="num">Pos</th><th>Driver</th><th>Team</th><th class="num">Grid</th><th class="num">Places</th><th class="num">Laps</th><th class="num">Time / gap</th><th class="num">Fastest lap</th><th class="num">Median clean lap</th><th class="num">Stops</th><th>Stints (laps)</th>`
+    :`<th class="num">Pos</th><th>Driver</th><th>Team</th><th class="num">Best lap</th><th class="num">Gap</th>${hasQ?'<th class="num">Q1</th><th class="num">Q2</th><th class="num">Q3</th>':''}<th class="num">Timed laps</th><th>Stints (laps)</th>`;
+  const table=`<table><thead><tr>${head}</tr></thead><tbody>${rows}</tbody></table>`;
+  const moments=M.rc.filter(r=>r.cat==='SafetyCar'||r.flag==='RED'||/PENALT|COLLISION|RETIRE|STOPPED|INCIDENT|CHEQUERED|RED FLAG|DELETED/i.test(r.msg)).slice(0,18)
+    .map(r=>`<div class="ev ${r.cat==='SafetyCar'?'sc':''}"><b>${r.lap?'L'+r.lap:'–'}</b><span>${esc(r.msg)}</span></div>`).join('')||empty('No race control messages for this session.');
+  const second=R?panel('c-places','Places gained and lost','Grid position minus finishing position',{h:620}):panel('c-gaps','Best lap, gap to the fastest','Each driver\'s fastest lap minus the fastest of anyone',{h:620});
+  return{html:`<div class="stack">${kp}
+    <section class="panel"><div class="ph"><h3>Classification</h3><span class="note">${R?'Clean laps are within 107% of a driver\'s median and not affected by pit stops or neutralisation':'Clean laps are within 107% of a driver\'s best and not in or out laps'}</span></div><div class="tbl">${table}</div></section>
+    ${second}
+    <section class="panel"><div class="ph"><h3>Key moments</h3><span class="note">From race control messages</span></div>${moments}</section></div>`,
+  mount(){
+    if(R){const mx=Math.max(3,...cls.map(d=>Math.abs(d.grid-d.finish)))+1;
+      hbars($('#c-places'),{aria:'Places gained or lost',labelW:96,valueW:70,rowH:28,
+        rows:M.drivers.map(d=>{const dp=d.grid!=null&&d.finish<99&&!d.res.dnf?d.grid-d.finish:null;
+          return{label:`P${d.finish<99?d.finish:'–'} ${d.code}`,value:dp,text:dp==null?(d.res.dnf?'DNF':'no data'):(dp>0?'+':dp<0?'−':'')+Math.abs(dp),color:dp>0?'var(--gain)':'var(--loss)',
+            tip:tipRows(esc(d.name),[['Grid',d.grid==null?'–':d.grid],['Finish',d.finish<99?d.finish:'–'],['Team',esc(d.team)]])};}),
+        x:[-mx,mx],xFmt:v=>(v>0?'+':'')+v,xTitle:'Places gained (right) or lost (left)'});
+    }else{
+      const list=M.drivers.filter(d=>d.best!=null).sort((a,b)=>a.best-b.best);
+      if(!list.length){$('#c-gaps').innerHTML=empty('No timed laps in this session.');return;}
+      const b=list[0].best,hi=Math.min(list[list.length-1].best-b,quant(list.map(d=>d.best-b),.9)*1.6+.3);
+      hbars($('#c-gaps'),{aria:'Best lap gap to the fastest',labelW:96,valueW:90,rowH:28,
+        rows:list.map(d=>({label:`P${d.finish<99?d.finish:'–'} ${d.code}`,value:d.best-b,text:d.best===b?fmtLap(b):'+'+f3(d.best-b),color:tcol(d.color),tip:tipRows(esc(d.name),[['Best lap',fmtLap(d.best)],['On lap',d.bestL?d.bestL.lap:'–'],['Team',esc(d.team)]])})),
+        x:[0,Math.max(.5,Math.ceil(hi*10)/10)],xFmt:v=>v.toFixed(1)+' s',xTitle:'Seconds slower than the fastest lap (long tail cut off)'});
+    }
+  }};
+}
+
+/* ================= RACE PROGRESS ================= */
+function pgProgress(M){
+  const capItems=[['auto','Auto'],['20','20 s'],['60','60 s'],['120','120 s']];
+  const ctrls=`<div class="ctrls">${pickerHTML()}${ctl('Gap axis',segHTML('cap',capItems,S.cap))}</div>`;
+  const il=M.drivers.map(d=>({d,v:d.laps.filter(l=>!l.neutral&&l.lap>1&&l.int!=null&&l.int<1).length})).sort((a,b)=>b.v-a.v);
+  return{html:`<div class="stack">${ctrls}${panel('c-pos','Position by lap','Position at the end of each lap. Triangles mark pit stops.',{h:660})}
+    ${panel('c-gap','Gap to the leader','Time behind the leader when each car crossed the line',{h:540})}
+    ${panel('c-int','Laps spent within 1.0 s of the car ahead','Counted at the finish line, excluding lap 1 and neutralised laps. A rough measure of time in traffic.',{h:600})}</div>`,
+  mount(){
+    bindPicker();const sd=selDrivers(),N=M.drivers.length,x=[0,M.total];
+    const ps=sd.map(d=>dseries(d,[[0,d.grid],...d.laps.map(l=>[l.lap,l.pos])],{w:2.4}));
+    const marks=[];sd.forEach(d=>M.pits.filter(p=>p.n===d.n).forEach(p=>{const l=d.lapBy.get(p.lap);if(l)marks.push({x:p.lap,y:l.pos,color:tcol(d.color),kind:'tri'});}));
+    lines($('#c-pos'),{aria:'Position by lap',h:660,x,y:[1,N],invert:true,yTicks:Array.from({length:N},(_,i)=>i+1),yFmt:v=>'P'+v,xFmt:v=>v===0?'Grid':v,xTitle:'Lap',snap:1,bands:winBands(M),series:ps,marks,endLabels:true,tipFmt:v=>'P'+v,tipTitle:v=>v===0?'Starting grid':'End of lap '+v,
+      xTicks:[0,...ticks(5,M.total,10).filter(t=>t>0)]});
+    const cap=S.cap==='auto'?null:+S.cap;
+    let gs=sd.map(d=>dseries(d,d.laps.map(l=>[l.lap,l.gap]),{w:2.2}));
+    let mx=0;sd.forEach(d=>d.laps.forEach(l=>{if(l.gap!=null)mx=Math.max(mx,l.gap);}));
+    const top=cap||Math.max(10,Math.ceil(mx/10)*10);
+    lines($('#c-gap'),{aria:'Gap to the leader by lap',h:540,x:[1,M.total],y:[0,top],invert:true,yFmt:v=>v+' s',xTitle:'Lap',snap:1,bands:winBands(M),series:gs,endLabels:true,zero:0,
+      tipFmt:v=>v===0?'leader':'+'+f3(v)+' s',tipTitle:v=>'End of lap '+v,xTicks:ticks(1,M.total,12)});
+    hbars($('#c-int'),{aria:'Laps within one second of the car ahead',labelW:96,rowH:26,rows:il.map(o=>({label:`${o.d.code}`,value:o.v,color:tcol(o.d.color),tip:tipRows(esc(o.d.name),[['Laps within 1 s',o.v],['Finish',o.d.finish<99?'P'+o.d.finish:'–']])})),x:[0,Math.max(5,il[0].v+2)],xTitle:'Laps',fmt:v=>v+' laps'});
+  }};
+}
+
+/* ================= LAP TIMES ================= */
+function pgLaps(M){
+  const ctrls=`<div class="ctrls">${pickerHTML()}${ctl('Show',segHTML('basis',[['abs','Lap time'],['rel','Gap to the field median']],S.basis))}${ctl('Laps',segHTML('show',[['clean','Clean laps only'],['all','Every lap']],S.show))}</div>`;
+  const byMed=M.sorted((a,b)=>(a.med==null?1e9:a.med)-(b.med==null?1e9:b.med));
+  const bm=byMed[0].med;
+  const hm=M.drivers.map(d=>{
+    const cells=Array.from({length:M.total},(_,i)=>{const l=d.lapBy.get(i+1);if(!l)return'<td class="h"></td>';
+      if(l.dur==null)return`<td class="h x" title="${esc(d.code)} L${i+1}: no time">·</td>`;
+      if(l.neutral)return`<td class="h x" title="${esc(d.code)} L${i+1}: neutralised, ${fmtLap(l.dur)}">S</td>`;
+      if(l.pitIn||l.pitOut)return`<td class="h x" title="${esc(d.code)} L${i+1}: ${l.pitIn?'pit in':'pit out'}, ${fmtLap(l.dur)}">P</td>`;
+      const fm=M.fieldMed[l.lap],dl=fm==null?null:l.dur-fm;if(dl==null)return'<td class="h"></td>';
+      const p=clamp(Math.abs(dl)/1.2,0,1)*70;
+      return`<td class="h" title="${esc(d.code)} L${i+1}: ${fmtLap(l.dur)} (${sgn(dl)} to field median)" style="background:color-mix(in srgb,${dl<0?'var(--cold)':'var(--hot)'} ${p}%,var(--surface))"></td>`;}).join('');
+    return`<tr><th class="rowh">${dTag(d)}</th>${cells}</tr>`;}).join('');
+  const heat=`<div class="tbl heatw"><table class="heat"><thead><tr><th class="rowh"></th>${Array.from({length:M.total},(_,i)=>`<th class="h">${(i+1)%5===0||i===0?i+1:''}</th>`).join('')}</tr></thead><tbody>${hm}</tbody></table></div>
+  <p class="foot">Blue is faster than the field median on that lap, red is slower (full colour at 1.2 s). P is a pit in-lap or out-lap, S a lap under Safety Car or VSC, a dot is a missing time.</p>`;
+  const tbl=`<div class="tbl"><table><thead><tr><th>Driver</th><th class="num">Median</th><th class="num">Mean</th><th class="num">Std dev</th><th class="num">Best clean</th><th class="num">Fastest lap</th><th class="num">Clean laps</th></tr></thead><tbody>${byMed.map(d=>`<tr><td>${dTag(d)}</td><td class="num">${fmtLap(d.med)}</td><td class="num">${fmtLap(d.avg)}</td><td class="num">${f3(d.sd)}</td><td class="num">${fmtLap(d.clean.length?Math.min(...d.clean.map(l=>l.dur)):null)}</td><td class="num">${fmtLap(d.best)}</td><td class="num">${d.clean.length}</td></tr>`).join('')}</tbody></table></div>`;
+  return{html:`<div class="stack">${ctrls}${panel('c-lt',S.basis==='abs'?'Lap time by lap':'Gap to the field median by lap',S.show==='clean'?'Pit, Safety Car and first laps are left out':'Pit and neutralised laps run off the top of the chart',{h:680})}
+    ${panel('c-spread','Lap time spread','Box is the middle half of each driver\'s clean laps, the bar is the median, dots are single laps',{h:760})}
+    ${panel('c-rank','Race pace ranking','Median clean lap, difference to the quickest driver',{h:640})}
+    <section class="panel"><div class="ph"><h3>Lap time table</h3><span class="note">Clean laps are within 107% of the driver's median, not in or out of the pits, not under neutralisation</span></div>${tbl}</section>
+    <section class="panel"><div class="ph"><h3>Every lap, every driver</h3><span class="note">Scroll sideways</span></div>${heat}</section></div>`,
+  mount(){
+    bindPicker();const sd=selDrivers(),abs=S.basis==='abs';
+    const use=l=>l.dur!=null&&l.lap>1&&(S.show==='all'||l.clean);
+    const val=l=>abs?l.dur:(M.fieldMed[l.lap]==null?null:l.dur-M.fieldMed[l.lap]);
+    const ser=sd.map(d=>dseries(d,d.laps.filter(l=>l.lap>1).map(l=>[l.lap,use(l)?val(l):null]),{w:2}));
+    const vals=[];sd.forEach(d=>d.clean.forEach(l=>{const v=val(l);if(v!=null)vals.push(v);}));vals.sort((a,b)=>a-b);
+    let y=null;if(vals.length){const lo=quant(vals,0.01),hi=quant(vals,0.99),pad=Math.max(.15,(hi-lo)*.08);y=[Math.floor((lo-pad)*10)/10,Math.ceil((hi+pad)*10)/10];}
+    lines($('#c-lt'),{aria:'Lap time by lap',h:680,x:[1,M.total],y:y||undefined,yFmt:abs?fmtLap:v=>sgn(v,1)+' s',xTitle:'Lap',snap:1,bands:winBands(M),series:ser,endLabels:true,zero:abs?null:0,
+      tipFmt:abs?fmtLap:v=>sgn(v,3)+' s',tipTitle:v=>'Lap '+v,xTicks:ticks(1,M.total,12),m:{l:abs?76:70}});
+    const rows=byMed.map(d=>({label:d.code,color:tcol(d.color),vals:d.clean.map(l=>l.dur),
+      tip:tipRows(esc(d.name),[['Median',fmtLap(d.med)],['Std dev',f3(d.sd)+' s'],['Clean laps',d.clean.length],['Best clean',fmtLap(d.clean.length?Math.min(...d.clean.map(l=>l.dur)):null)]])}));
+    const all=[];rows.forEach(r=>all.push(...r.vals));all.sort((a,b)=>a-b);
+    strip($('#c-spread'),{aria:'Lap time distribution',rows,x:all.length?[Math.floor((all[0]-.2)*2)/2,Math.ceil((quant(all,.995)+.2)*2)/2]:[0,1],xFmt:fmtLap,xTitle:'Lap time',rowH:34});
+    hbars($('#c-rank'),{aria:'Race pace ranking',labelW:96,valueW:80,rowH:28,
+      rows:byMed.map(d=>({label:d.code,value:d.med-bm,color:tcol(d.color),text:d.med===bm?'quickest':'+'+f3(d.med-bm)+' s',tip:tipRows(esc(d.name),[['Median clean lap',fmtLap(d.med)],['Mean',fmtLap(d.avg)],['Std dev',f3(d.sd)+' s']])})),
+      x:[0,Math.max(.5,Math.ceil(Math.max(...byMed.map(d=>d.med-bm))*10)/10+.2)],xFmt:v=>v.toFixed(1)+' s',xTitle:'Seconds per lap slower than the quickest driver'});
+  }};
+}
+
+/* ================= TYRES ================= */
+function stintMap(host,M){
+  watch(host,()=>{
+    const W=hostW(host),rh=32,lw=104,m={l:lw,r:20,t:30,b:44},H=m.t+M.drivers.length*rh+m.b,X=lin(.5,M.total+.5,m.l,W-m.r);
+    let s=`<svg width="${W}" height="${H}" viewBox="0 0 ${W} ${H}" role="img" aria-label="Tyre stints for every driver">`;
+    M.windows.forEach(w=>{s+=`<rect x="${X(w.lap0-.5)}" y="${m.t-6}" width="${X(w.lap1+.5)-X(w.lap0-.5)}" height="${H-m.t-m.b+12}" style="fill:var(--muted);opacity:.15"/><text class="t-muted" x="${(X(w.lap0-.5)+X(w.lap1+.5))/2}" y="${m.t-10}" text-anchor="middle">${w.kind}</text>`;});
+    ticks(1,M.total,12).forEach(t=>{s+=`<line x1="${X(t)}" x2="${X(t)}" y1="${m.t-4}" y2="${H-m.b+4}" style="stroke:var(--grid)"/><text x="${X(t)}" y="${H-m.b+20}" text-anchor="middle">${t}</text>`;});
+    M.drivers.forEach((d,i)=>{const y=m.t+i*rh;
+      s+=`<text x="${lw-10}" y="${y+rh/2+4}" text-anchor="end" style="fill:var(--ink)">${esc(d.code)}</text>`;
+      d.stints.forEach((st,j)=>{const x0=X(st.from-.5)+1,x1=X(st.to+.5)-1;
+        s+=`<g class="st" data-d="${i}" data-s="${j}"><rect x="${x0}" y="${y+4}" width="${Math.max(2,x1-x0)}" height="${rh-8}" rx="3" style="fill:${cVar(st.comp)}"/>${x1-x0>46?`<text x="${(x0+x1)/2}" y="${y+rh/2+4}" text-anchor="middle" style="fill:${cInk(st.comp)};font-weight:500">${cLet(st.comp)} ${st.to-st.from+1}</text>`:''}</g>`;});
+      if(d.res.dnf){const last=d.stints[d.stints.length-1];if(last)s+=`<text x="${X(last.to+.5)+6}" y="${y+rh/2+4}" style="fill:var(--loss)">DNF</text>`;}
+    });
+    s+=`<line x1="${m.l}" x2="${W-m.r}" y1="${H-m.b+4}" y2="${H-m.b+4}" style="stroke:var(--axis)"/><text class="t-muted" x="${m.l+(W-m.l-m.r)/2}" y="${H-6}" text-anchor="middle">Lap</text></svg>`;
+    host.innerHTML=s;
+    $$('.st',host).forEach(g=>{const mv=e=>{const d=M.drivers[+g.dataset.d],st=d.stints[+g.dataset.s];
+      showTip(tipRows(`${esc(d.code)} · ${st.comp.toLowerCase()}`,[['Laps',`${st.from}–${st.to} (${st.to-st.from+1})`],['Tyre age at start',st.age0],['Median clean lap',fmtLap(median(st.clean.map(l=>l.dur)))],['Wear trend',st.reg?sgn(st.reg.slope)+' s/lap':'–']]),e);};
+      g.addEventListener('pointermove',mv);g.addEventListener('pointerdown',mv);g.addEventListener('pointerleave',hideTip);});
+  });
+}
+function pgTyres(M){
+  const comps=[...new Set(M.stints.map(s=>s.comp))].sort((a,b)=>['SOFT','MEDIUM','HARD','INTERMEDIATE','WET'].indexOf(a)-['SOFT','MEDIUM','HARD','INTERMEDIATE','WET'].indexOf(b));
+  if(!S.comp||!comps.includes(S.comp))S.comp=comps[0];
+  const sum=comps.map(c=>{const ss=M.stints.filter(s=>s.comp===c),pts=[];ss.forEach(s=>s.clean.forEach(l=>pts.push([l.age,l.dur-s.d.med])));
+    const rg=regress(pts.map(p=>p[0]),pts.map(p=>p[1]));
+    return{c,n:ss.length,laps:ss.reduce((a,s)=>a+s.laps.length,0),longest:Math.max(...ss.map(s=>s.to-s.from+1)),med:median(pts.map(p=>p[1])),rg};});
+  const sumT=`<div class="tbl"><table><thead><tr><th>Compound</th><th class="num">Stints</th><th class="num">Laps run</th><th class="num">Longest stint</th><th class="num">Median vs driver median</th><th class="num">Wear trend</th><th class="num">Fit (R²)</th></tr></thead><tbody>${sum.map(r=>`<tr><td>${chip(r.c)} <span class="dim">${r.c.toLowerCase()}</span></td><td class="num">${r.n}</td><td class="num">${r.laps}</td><td class="num">${r.longest}</td><td class="num">${r.med==null?'–':sgn(r.med)+' s'}</td><td class="num">${r.rg?sgn(r.rg.slope)+' s/lap':'–'}</td><td class="num">${r.rg?f2(r.rg.r2):'–'}</td></tr>`).join('')}</tbody></table></div>`;
+  const sRows=M.stints.slice().sort((a,b)=>a.d.finish-b.d.finish||a.stint-b.stint).map(s=>`<tr><td>${dTag(s.d)}</td><td class="num">${s.stint}</td><td>${chip(s.comp)}</td><td class="num">${s.from}–${s.to}</td><td class="num">${s.to-s.from+1}</td><td class="num">${s.age0}</td><td class="num">${s.clean.length}</td><td class="num">${fmtLap(s.avg)}</td><td class="num">${fmtLap(s.best)}</td><td class="num">${s.reg?sgn(s.reg.slope)+' s/lap':'–'}</td></tr>`).join('');
+  const sT=`<div class="tbl"><table><thead><tr><th>Driver</th><th class="num">Stint</th><th>Tyre</th><th class="num">Laps</th><th class="num">Length</th><th class="num">Age at start</th><th class="num">Clean laps</th><th class="num">Average clean lap</th><th class="num">Best clean lap</th><th class="num">Wear trend</th></tr></thead><tbody>${sRows}</tbody></table></div>`;
+  return{html:`<div class="stack">${panel('c-stint','Stint map','Every driver, every stint. Hover a stint for pace and wear.',{h:M.drivers.length*32+90})}
+    <div class="ctrls">${ctl('Compound',segHTML('comp',comps.map(c=>[c,cLet(c)+' '+c.toLowerCase()]),S.comp))}</div>
+    ${panel('c-deg','Wear: lap time against tyre age','Each dot is one clean lap. Height is the lap time minus that driver\'s own median, so car speed drops out. The dashed line fits every stint on this compound.',{h:600})}
+    <section class="panel"><div class="ph"><h3>Compound summary</h3><span class="note">Lap times include fuel burn, which makes every trend about 0.03 s/lap better than the tyre alone. The offset is the same on every compound.</span></div>${sumT}</section>
+    <section class="panel"><div class="ph"><h3>Every stint</h3></div>${sT}</section></div>`,
+  mount(){
+    stintMap($('#c-stint'),M);
+    const ss=M.stints.filter(s=>s.comp===S.comp),ser=[],all=[];
+    ss.forEach(s=>{const col=tcol(s.d.color),pts=s.clean.map(l=>{const v=l.dur-s.d.med;all.push([l.age,v]);
+      return[l.age,v,tipRows(`${esc(s.d.code)} · lap ${l.lap}`,[['Tyre age',l.age+' laps'],['Lap time',fmtLap(l.dur)],['Vs own median',sgn(v)+' s'],['Stint',s.stint]])];});
+      ser.push({id:'d'+s.n+'-'+s.stint,dots:true,color:col,pts,r:3.4,op:.8});
+      if(s.reg&&s.clean.length>3){const a0=Math.min(...s.clean.map(l=>l.age)),a1=Math.max(...s.clean.map(l=>l.age));
+        ser.push({id:'r'+s.n+s.stint,color:col,w:1.4,op:.55,noTip:true,pts:[[a0,s.reg.icpt+s.reg.slope*a0-s.d.med],[a1,s.reg.icpt+s.reg.slope*a1-s.d.med]]});}});
+    const rg=regress(all.map(p=>p[0]),all.map(p=>p[1]));
+    if(rg){const xs=all.map(p=>p[0]),a0=Math.min(...xs),a1=Math.max(...xs);ser.push({id:'field',color:'var(--ink)',w:2.6,dash:true,noTip:true,pts:[[a0,rg.icpt+rg.slope*a0],[a1,rg.icpt+rg.slope*a1]]});}
+    const ys=all.map(p=>p[1]).sort((a,b)=>a-b);
+    lines($('#c-deg'),{aria:'Lap time against tyre age',h:600,x:[0,Math.max(5,...all.map(p=>p[0]))+1],y:ys.length?[Math.floor(quant(ys,.01)*5)/5-.1,Math.ceil(quant(ys,.99)*5)/5+.1]:[-1,1],yFmt:v=>sgn(v,1),xTitle:'Tyre age (laps)',yTitle:'Seconds vs own median',zero:0,nearest:true,series:ser,xFmt:String,m:{l:72}});
+    $('#c-deg').insertAdjacentHTML('beforebegin',`<div class="statline">${rg?`Trend on ${S.comp.toLowerCase()}: <b>${sgn(rg.slope)} s per lap of age</b> across ${rg.n} clean laps (R² ${f2(rg.r2)})`:'Not enough clean laps on this compound to fit a trend.'}</div>`);
+  }};
+}
+
+/* ================= PIT STOPS ================= */
+function pgPits(M){
+  const hasStop=M.pits.some(p=>p.stop!=null);
+  const rows=M.pits.map(p=>`<tr><td>${dTag(p.d)}</td><td class="num">${p.lap}${p.neutral?' <span class="tag">SC</span>':''}</td><td><span class="stp">${p.from?chip(p.from):''}<span class="dim">→</span>${p.to?chip(p.to):''}</span></td><td class="num">${f2(p.lane)}</td><td class="num">${p.stop!=null?f2(p.stop):'–'}</td><td class="num">${p.posBefore==null?'–':'P'+p.posBefore} → ${p.posAfter==null?'–':'P'+p.posAfter}</td><td class="num">${p.loss==null?'–':f1(p.loss)+' s'}</td></tr>`).join('');
+  const tbl=`<div class="tbl"><table><thead><tr><th>Driver</th><th class="num">Lap</th><th>Tyres</th><th class="num">Pit lane (s)</th><th class="num">Stationary (s)</th><th class="num">Position before → after</th><th class="num">Time lost vs clean laps</th></tr></thead><tbody>${rows}</tbody></table></div><p class="foot">Time lost is the in-lap plus the out-lap, minus two of that driver's median clean laps. Positions are taken at the end of the lap before the stop and two laps after it, so other cars' stops also move them.</p>`;
+  return{html:`<div class="stack">
+    ${hasStop?panel('c-stop','Stationary time, every stop','Ranked quickest first',{h:Math.max(300,M.pits.length*26+70)}):''}
+    ${panel('c-lane','Pit lane time, every stop','Entry to exit of the pit lane. Safety Car stops are labelled.',{h:Math.max(300,M.pits.length*26+70)})}
+    ${panel('c-team',`Team pit stop times`,hasStop?'Stationary time per team, one dot per stop':'Pit lane time per team, one dot per stop',{h:560})}
+    ${panel('c-when','When the stops happened','Lap of the stop against tyre age on the in-lap',{h:520})}
+    <section class="panel"><div class="ph"><h3>Pit stop log</h3></div>${tbl}</section></div>`,
+  mount(){
+    const mk=(key,id,fmt)=>{const list=M.pits.filter(p=>p[key]!=null).sort((a,b)=>a[key]-b[key]);if(!list.length||!$(id))return;const best=list[0][key];
+      hbars($(id),{aria:'Pit stop ranking',labelW:128,valueW:70,rowH:26,rows:list.map(p=>({label:`${p.code} lap ${p.lap}`,value:p[key],color:tcol(p.d.color),text:f2(p[key])+' s'+(p.neutral?' SC':''),
+        tip:tipRows(`${esc(p.code)} lap ${p.lap}`,[['Pit lane',f2(p.lane)+' s'],['Stationary',p.stop==null?'–':f2(p.stop)+' s'],['Tyres',`${p.from||'?'} to ${p.to||'?'}`],['Time lost',p.loss==null?'–':f1(p.loss)+' s']])})),
+        x:[Math.max(0,Math.floor((best-.3)*2)/2),Math.ceil((list[list.length-1][key]+.3)*2)/2],xFmt:v=>v.toFixed(1)+' s',xTitle:fmt,dots:true});};
+    mk('stop','#c-stop','Stationary time (s). The axis does not start at zero.');mk('lane','#c-lane','Pit lane time (s). The axis does not start at zero.');
+    const key=hasStop?'stop':'lane',teams=[...new Set(M.drivers.map(d=>d.team))];
+    const trs=teams.map(t=>{const v=M.pits.filter(p=>p.d.team===t&&p[key]!=null).map(p=>p[key]);const d=M.drivers.find(x=>x.team===t);return{label:t.length>14?t.slice(0,13)+'…':t,color:tcol(d.color),vals:v,m:mean(v)};}).filter(r=>r.vals.length).sort((a,b)=>a.m-b.m);
+    if(trs.length){const all=trs.flatMap(r=>r.vals);
+      strip($('#c-team'),{aria:'Pit stop times by team',rows:trs.map(r=>({...r,tip:tipRows(esc(r.label),[['Stops',r.vals.length],['Average',f2(r.m)+' s'],['Best',f2(Math.min(...r.vals))+' s']])})),x:[Math.floor((Math.min(...all)-.2)*2)/2,Math.ceil((Math.max(...all)+.2)*2)/2],xFmt:v=>v.toFixed(1),xTitle:hasStop?'Stationary time (s)':'Pit lane time (s)',rowH:46,labelW:170});}
+    else $('#c-team').innerHTML=empty('No pit stop times in this file.');
+    const ser=[{id:'p',dots:true,color:'var(--ink)',pts:[]}],bySeries=[];
+    M.pits.forEach(p=>{const l=p.d.lapBy.get(p.lap);if(!l||l.age==null)return;bySeries.push({id:'p'+p.n+'-'+p.lap,dots:true,color:tcol(p.d.color),r:6,op:.95,pts:[[p.lap,l.age,tipRows(`${esc(p.code)} · lap ${p.lap}`,[['Tyre age',l.age+' laps'],['Off',p.from||'?'],['On',p.to||'?'],['Under neutralisation',p.neutral?'yes':'no']])]]});});
+    lines($('#c-when'),{aria:'Pit stop timing',h:520,x:[0,M.total],y:[0,Math.max(10,...bySeries.map(s=>s.pts[0][1]))+3],xTitle:'Lap of the stop',yTitle:'Tyre age (laps)',bands:winBands(M),series:bySeries,nearest:true,xTicks:ticks(0,M.total,12),m:{l:72}});
+  }};
+}
+
+/* ================= SECTORS & SPEED ================= */
+function pgSectors(M){
+  const ds=M.sorted((a,b)=>(a.best==null?1e9:a.best)-(b.best==null?1e9:b.best));
+  const col=(v,b)=>v==null?'':(v===b?'purple':'');
+  const rows=ds.map(d=>`<tr><td>${dTag(d)}</td><td class="num ${col(d.bs.s1,M.bestSec.s1)}">${f3(d.bs.s1)}</td><td class="num ${col(d.bs.s2,M.bestSec.s2)}">${f3(d.bs.s2)}</td><td class="num ${col(d.bs.s3,M.bestSec.s3)}">${f3(d.bs.s3)}</td><td class="num">${fmtLap(d.ideal)}</td><td class="num">${fmtLap(d.best)}</td><td class="num">${d.ideal!=null&&d.best!=null?sgn(d.best-d.ideal):'–'}</td></tr>`).join('');
+  const tbl=`<div class="tbl"><table><thead><tr><th>Driver</th><th class="num">Best sector 1</th><th class="num">Best sector 2</th><th class="num">Best sector 3</th><th class="num">Ideal lap</th><th class="num">Fastest lap</th><th class="num">Left on the table</th></tr></thead><tbody>${rows}</tbody></table></div><p class="foot">Purple is the best sector of the race. The ideal lap adds each driver's three best sectors. Sectors on neutralised laps are ignored.</p>`;
+  const spd=[['st','Speed trap'],['i1','Intermediate 1'],['i2','Intermediate 2']];
+  return{html:`<div class="stack">
+    <section class="panel"><div class="ph"><h3>Best sectors and ideal lap</h3></div>${tbl}</section>
+    ${[1,2,3].map(k=>panel('c-s'+k,`Sector ${k}: time to the best in the race`,'Each driver\'s best sector minus the best of anyone',{h:M.drivers.length*26+80})).join('')}
+    <div class="ctrls">${ctl('Speed measured at',segHTML('spd',spd,S.spd))}</div>
+    ${panel('c-spd','Top speed','Highest value recorded in the race. The axis does not start at zero.',{h:M.drivers.length*28+80})}
+    ${panel('c-sc','Top speed against fastest lap','Straight-line speed is one end of the trade between drag and downforce',{h:560})}</div>`,
+  mount(){
+    [1,2,3].forEach(k=>{const key='s'+k,b=M.bestSec[key],list=M.drivers.filter(d=>d.bs[key]!=null).sort((x,y)=>x.bs[key]-y.bs[key]);if(b==null)return;
+      hbars($('#c-s'+k),{aria:'Sector '+k+' deficit',labelW:96,valueW:80,rowH:26,rows:list.map(d=>({label:d.code,value:d.bs[key]-b,color:tcol(d.color),text:d.bs[key]===b?'best '+f3(b):'+'+f3(d.bs[key]-b),tip:tipRows(esc(d.name),[['Best sector '+k,f3(d.bs[key])+' s'],['Gap to best',sgn(d.bs[key]-b)+' s']])})),
+        x:[0,Math.max(.3,Math.ceil(Math.max(...list.map(d=>d.bs[key]-b))*10)/10+.1)],xFmt:v=>v.toFixed(1)+' s',xTitle:'Seconds slower than the best sector'});});
+    const key='max_'+S.spd,list=M.drivers.filter(d=>d[key]!=null).sort((a,b)=>b[key]-a[key]);
+    if(list.length){const lo=Math.min(...list.map(d=>d[key])),hi=Math.max(...list.map(d=>d[key]));
+      hbars($('#c-spd'),{aria:'Top speeds',labelW:96,valueW:90,rowH:28,dots:true,rows:list.map(d=>({label:d.code,value:d[key],color:tcol(d.color),text:d[key]+' km/h',tip:tipRows(esc(d.name),[['Top speed',d[key]+' km/h'],['Team',esc(d.team)]])})),x:[Math.floor((lo-4)/5)*5,Math.ceil((hi+4)/5)*5],xFmt:v=>v,xTitle:'km/h'});}
+    else $('#c-spd').innerHTML=empty('No speed trap values in this file.');
+    const pts=M.drivers.filter(d=>d.max_st!=null&&d.best!=null);
+    if(pts.length){const bs=pts.map(d=>d.best),ss=pts.map(d=>d.max_st);
+      lines($('#c-sc'),{aria:'Top speed against fastest lap',h:560,x:[Math.floor(Math.min(...ss)-3),Math.ceil(Math.max(...ss)+3)],y:[Math.min(...bs)-.3,Math.max(...bs)+.3],yFmt:fmtLap,xTitle:'Top speed in the speed trap (km/h)',yTitle:'Fastest lap',nearest:true,m:{l:84},
+        series:pts.map(d=>({id:d.n,dots:true,color:tcol(d.color),r:7,op:.95,tag:d.code,pts:[[d.max_st,d.best,tipRows(esc(d.name),[['Top speed',d.max_st+' km/h'],['Fastest lap',fmtLap(d.best)],['Team',esc(d.team)]])]]}))});}
+    else $('#c-sc').innerHTML=empty('Needs speed trap values and lap times.');
+  }};
+}
+
+/* ================= TELEMETRY (any lap, loaded on demand) ================= */
+const lapLabel=(d,l,fastest)=>`Lap ${l.lap} · ${fmtLap(l.dur)}${fastest?' · fastest':''}${l.comp?' · '+cLet(l.comp)+(l.age!=null?l.age:''):''}${l.pitOut?' · out lap':''}${l.pitIn?' · in lap':''}${l.neutral?' · neutralised':''}`;
+const timedLaps=d=>d.laps.filter(l=>l.dur!=null&&l.start!=null);
+const fastestLapNo=d=>{const t=timedLaps(d).filter(l=>l.lap>1||true);if(!t.length)return null;return t.reduce((a,b)=>b.dur<a.dur?b:a).lap;};
+function pgTelemetry(M){
+  const td=M.drivers.filter(d=>timedLaps(d).length);
+  if(!td.length)return{html:`<div class="stack">${empty('No timed laps in this session, so there is no lap to show telemetry for.')}</div>`,mount(){}};
+  const fix=(t,other)=>{if(!t||!td.find(d=>d.n===t.n)){const d=td.find(x=>!other||x.n!==other.n)||td[0];return{n:d.n,lap:fastestLapNo(d)};}
+    const d=M.byN.get(t.n);if(!d.lapBy.get(t.lap)||d.lapBy.get(t.lap).dur==null)t={n:t.n,lap:fastestLapNo(d)};return t;};
+  S.tA=fix(S.tA,null);S.tB=fix(S.tB,S.tA);
+  const dsel=(id,cur)=>`<select id="${id}" class="sel">${td.map(d=>`<option value="${d.n}" ${d.n===cur?'selected':''}>${esc(d.code)} · ${esc(d.name)}</option>`).join('')}</select>`;
+  const lsel=(id,t)=>{const d=M.byN.get(t.n),fl=fastestLapNo(d);return`<select id="${id}" class="sel">${timedLaps(d).map(l=>`<option value="${l.lap}" ${l.lap===t.lap?'selected':''}>${esc(lapLabel(d,l,l.lap===fl))}</option>`).join('')}</select>`;};
+  const ctrls=`<div class="ctrls">${ctl('Driver A',dsel('tdA',S.tA.n))}${ctl('Lap A',lsel('tlA',S.tA))}${ctl('Driver B',dsel('tdB',S.tB.n))}${ctl('Lap B',lsel('tlB',S.tB))}
+    <div class="ctl-g"><div class="lbl">About these traces</div><div class="note2">Pick any timed lap for each driver. Distance is integrated from speed and scaled so both laps have the same length, so the traces line up. Telemetry is loaded when you choose a lap.</div></div></div>`;
+  return{html:`<div class="stack">${ctrls}<div id="telbody"></div></div>`,
+  mount(){
+    const rid=RID;
+    $('#tdA').addEventListener('change',e=>{const d=M.byN.get(+e.target.value);S.tA={n:d.n,lap:fastestLapNo(d)};rerender();});
+    $('#tdB').addEventListener('change',e=>{const d=M.byN.get(+e.target.value);S.tB={n:d.n,lap:fastestLapNo(d)};rerender();});
+    $('#tlA').addEventListener('change',e=>{S.tA={n:S.tA.n,lap:+e.target.value};rerender();});
+    $('#tlB').addEventListener('change',e=>{S.tB={n:S.tB.n,lap:+e.target.value};rerender();});
+    const host=$('#telbody');host.innerHTML=empty('Loading telemetry from OpenF1…');
+    Promise.all([loadTel(M,S.tA.n,S.tA.lap),loadTel(M,S.tB.n,S.tB.lap)]).then(([ta,tb])=>{
+      if(rid!==RID)return;
+      const Lref=(telRawDist(ta)+telRawDist(tb))/2,ga=telGrid(ta,Lref),gb=telGrid(tb,Lref);
+      if(!ga||!gb){host.innerHTML=empty('Not enough telemetry samples for one of these laps.');return;}
+      drawTel(M,host,ga,gb);
+    }).catch(e=>{if(rid===RID)host.innerHTML=empty('Could not load telemetry: '+esc(e.message));});
+  }};
+}
+function drawTel(M,host,ga,gb){
+  const A=M.byN.get(S.tA.n),B=M.byN.get(S.tB.n),la=`${A.code} L${S.tA.lap}`,lb=`${B.code} L${S.tB.lap}`,n=ga.x.length,[ca,cb]=pairColors(A,B);
+  const ch=(id,t,note,h)=>panel(id,t,note,{h});
+  host.innerHTML=`<div class="stack">
+    ${panel('c-map1',`Track map, speed of ${esc(la)}`,'Corner numbers are the speed minima found on this lap, in order from the line',{body:'chart centre'})}
+    ${panel('c-map2','Track map, who was faster',`Each stretch is coloured for the lap that covered it quicker`,{body:'chart centre'})}
+    ${ch('c-sp','Speed','km/h',420)}${ch('c-dt','Time delta',`${esc(la)} minus ${esc(lb)}. Above zero means ${esc(la)} is behind.`,320)}
+    ${ch('c-th','Throttle','Percent pedal',260)}${ch('c-br','Brake','On or off',200)}${ch('c-ge','Gear','',240)}${ch('c-rp','Engine speed','rpm',280)}${ch('c-ds','DRS','Open or closed',200)}
+    ${panel('c-cn','Time by corner',`Time ${esc(la)} gained or lost on ${esc(lb)} between one speed minimum and the next`,{h:300})}
+    <section class="panel"><div class="ph"><h3>Corner by corner</h3><span class="note">Minimum speed within 80 m of the apex. Braking is measured back from the apex, throttle forward from it.</span></div><div class="tbl" id="t-cn"></div></section></div>`;
+  const dt=ga.tm.map((t,i)=>t-gb.tm[i]),cor=detectCorners(ga),vl=cor.map((c,i)=>({x:c.i*ga.step,label:'C'+(i+1)}));
+  const hosts=[];
+  const sa=k=>({id:'a'+k,label:la,color:ca,w:2.4,pts:ga.x.map((x,i)=>[x,ga[k][i]])}),sb=k=>({id:'b'+k,label:lb,color:cb.c,dash:cb.dash,w:2.4,pts:ga.x.map((x,i)=>[x,gb[k][i]])});
+  const tipAll=xv=>{const i=Math.round(xv/ga.step);
+    return tipRows(`${Math.round(xv)} m`,[[esc(la)+' speed',Math.round(ga.sp[i])+' km/h'],[esc(lb)+' speed',Math.round(gb.sp[i])+' km/h'],['Delta',sgn(dt[i])+' s'],['Throttle',`${Math.round(ga.thr[i])} / ${Math.round(gb.thr[i])} %`],['Brake',`${ga.brk[i]?'on':'off'} / ${gb.brk[i]?'on':'off'}`],['Gear',`${ga.gear[i]} / ${gb.gear[i]}`],['RPM',`${Math.round(ga.rpm[i])} / ${Math.round(gb.rpm[i])}`],['DRS',`${ga.drs[i]?'open':'closed'} / ${gb.drs[i]?'open':'closed'}`]]);};
+  const common={x:[0,ga.L],snap:ga.step,xFmt:v=>v>=1000?(v/1000)+' km':v,xN:12,tip:tipAll,xTitle:'Distance along the lap (m)',m:{l:70},onMove:xv=>hosts.forEach(h=>h._cross&&h._cross(xv)),onLeave:()=>hosts.forEach(h=>h._cross&&h._cross(null))};
+  const add=(id,o)=>{const h=$(id);hosts.push(h);lines(h,{...common,...o});};
+  const mn=(k)=>Math.min(...ga[k],...gb[k]),mx=(k)=>Math.max(...ga[k],...gb[k]);
+  add('#c-sp',{aria:'Speed',h:420,y:[Math.floor(mn('sp')/20)*20-10,Math.ceil(mx('sp')/20)*20+10],series:[sb('sp'),sa('sp')],vlines:vl,top:24,yTitle:'km/h'});
+  add('#c-dt',{aria:'Time delta',h:320,y:(()=>{const m=Math.max(.1,Math.ceil(Math.max(...dt.map(Math.abs))*1.15*20)/20);return[-m,m];})(),yFmt:v=>sgn(v,2),zero:0,yTitle:'seconds',series:[{id:'dt',color:'var(--ink-2)',w:1.8,pts:ga.x.map((x,i)=>[x,dt[i]]),fill:{pos:'var(--hot)',neg:'var(--cold)',base:0}}],vlines:vl,top:24});
+  add('#c-th',{aria:'Throttle',h:260,y:[-5,105],yTicks:[0,50,100],yFmt:v=>v+'%',series:[sb('thr'),sa('thr')]});
+  add('#c-br',{aria:'Brake',h:200,y:[-.15,1.15],yTicks:[0,1],yFmt:v=>v?'on':'off',series:[sb('brk'),sa('brk')]});
+  add('#c-ge',{aria:'Gear',h:240,y:[.5,8.5],yTicks:[1,2,3,4,5,6,7,8],series:[sb('gear'),sa('gear')]});
+  add('#c-rp',{aria:'Engine speed',h:280,y:[Math.floor(mn('rpm')/1000)*1000-500,Math.ceil(mx('rpm')/1000)*1000+500],yFmt:v=>(v/1000)+'k',series:[sb('rpm'),sa('rpm')]});
+  add('#c-ds',{aria:'DRS',h:200,y:[-.15,1.15],yTicks:[0,1],yFmt:v=>v?'open':'closed',series:[sb('drs'),sa('drs')]});
+  if(ga.px[0]==null||gb.px[0]==null){$('#c-map1').innerHTML=empty('No location data for this lap.');$('#c-map2').innerHTML=empty('No location data for this lap.');}
+  else{
+    const lo=Math.min(...ga.sp),hi=Math.max(...ga.sp),labels=cor.map((c,i)=>({i:c.i,t:'C'+(i+1)}));
+    trackMap($('#c-map1'),{aria:'Track map coloured by speed',pts:ga.x.map((x,i)=>({x:ga.px[i],y:ga.py[i],c:seqColor((ga.sp[i]-lo)/(hi-lo||1))})),labels});
+    $('#c-map1').insertAdjacentHTML('afterend',`<div class="scale"><span>${Math.round(lo)} km/h</span><i style="background:linear-gradient(90deg,${seqColor(0)},${seqColor(1)})"></i><span>${Math.round(hi)} km/h</span></div>`);
+    const seg=Math.max(1,Math.round(ga.L/24/ga.step)),cols=[];
+    for(let i=0;i<n;i++){const s0=Math.floor(i/seg)*seg,s1=Math.min(n-1,s0+seg);cols.push(dt[s1]-dt[s0]<0?ca:cb.c);}
+    trackMap($('#c-map2'),{aria:'Track map showing the faster lap per stretch',pts:ga.x.map((x,i)=>({x:ga.px[i],y:ga.py[i],c:cols[i]})),labels});
+    let na=0,nb=0;for(let s0=0;s0<n-1;s0+=seg){const s1=Math.min(n-1,s0+seg);(dt[s1]-dt[s0]<0)?na++:nb++;}
+    $('#c-map2').insertAdjacentHTML('afterend',`<div class="scale"><span><i class="sw ln" style="background:${ca}"></i>${esc(la)} faster on ${na} of ${na+nb} stretches</span><span><i class="sw ln" style="background:${cb.c}"></i>${esc(lb)} faster on ${nb}</span></div>`);
+  }
+  const bounds=[0,...cor.slice(0,-1).map((c,i)=>Math.round((c.i+cor[i+1].i)/2)),n-1];
+  const brakeBack=(g,i)=>{let k=i;while(k>0&&!g.brk[k]&&i-k<=100)k--;if(!g.brk[k])return null;let s=k;while(s>0&&g.brk[s-1])s--;return(i-s)*g.step;};
+  const thrFwd=(g,i)=>{let k=i;while(k<n-1&&g.thr[k]<98&&k-i<=120)k++;return g.thr[k]>=98?(k-i)*g.step:null;};
+  const minNear=(g,i)=>Math.min(...g.sp.slice(Math.max(0,i-16),Math.min(n,i+17)));
+  const cr=cor.map((c,j)=>({n:'C'+(j+1),d:c.i*ga.step,ma:minNear(ga,c.i),mb:minNear(gb,c.i),ba:brakeBack(ga,c.i),bb:brakeBack(gb,c.i),ta:thrFwd(ga,c.i),tb:thrFwd(gb,c.i),dl:dt[bounds[j+1]]-dt[bounds[j]]}));
+  if(cr.length){
+    const lim=Math.max(.05,Math.ceil(Math.max(...cr.map(r=>Math.abs(r.dl)))*20)/20+.02);
+    hbars($('#c-cn'),{aria:'Time by corner',labelW:60,rowH:26,rows:cr.map(r=>({label:r.n,value:r.dl,color:r.dl>0?'var(--hot)':'var(--cold)',text:sgn(r.dl),tip:tipRows(r.n+' at '+Math.round(r.d)+' m',[['Delta',sgn(r.dl)+' s'],[la+' minimum',Math.round(r.ma)+' km/h'],[lb+' minimum',Math.round(r.mb)+' km/h']])})),
+      x:[-lim,lim],xFmt:v=>sgn(v,2),xTitle:`Seconds. Red means ${la} lost time, blue means it gained.`});
+    $('#c-cn').style.minHeight=(cr.length*26+70)+'px';
+    const m=v=>v==null?'–':Math.round(v)+' m';
+    $('#t-cn').innerHTML=`<table><thead><tr><th>Corner</th><th class="num">At</th><th class="num">${esc(la)} min km/h</th><th class="num">${esc(lb)} min km/h</th><th class="num">Speed diff</th><th class="num">${esc(la)} brakes</th><th class="num">${esc(lb)} brakes</th><th class="num">${esc(la)} full throttle</th><th class="num">${esc(lb)} full throttle</th><th class="num">Zone time</th></tr></thead><tbody>${cr.map(r=>`<tr><td>${r.n}</td><td class="num">${Math.round(r.d)} m</td><td class="num">${Math.round(r.ma)}</td><td class="num">${Math.round(r.mb)}</td><td class="num">${(r.ma-r.mb>=0?'+':'−')+Math.abs(r.ma-r.mb).toFixed(0)}</td><td class="num">${m(r.ba)}</td><td class="num">${m(r.bb)}</td><td class="num">${m(r.ta)}</td><td class="num">${m(r.tb)}</td><td class="num">${sgn(r.dl)}</td></tr>`).join('')}</tbody></table>`;
+  }else{$('#c-cn').innerHTML=empty('No clear corners found in this trace.');$('#t-cn').innerHTML='';}
+}
+
+/* ================= DRIVER ================= */
+function pgDriver(M){
+  if(!S.drv||!M.byN.has(S.drv))S.drv=M.drivers[0].n;
+  const d=M.byN.get(S.drv);
+  const sel=`<div class="ctrls">${ctl('Driver',`<select id="selD" class="sel">${M.drivers.map(x=>`<option value="${x.n}" ${x.n===S.drv?'selected':''}>${esc(x.code)} · ${esc(x.name)} · ${esc(x.team)}</option>`).join('')}</select>`)}</div>`;
+  const kpi=(l,v,s)=>`<div class="kpi"><div class="lbl">${l}</div><div class="v">${v}</div><div class="s">${s||''}</div></div>`;
+  const dp=d.grid!=null&&d.finish<99?d.grid-d.finish:null,ps=M.pits.filter(p=>p.n===d.n);
+  const kp=`<div class="kpis">${kpi('Finish','P'+(d.finish<99?d.finish:'–'),`${resultText(d)}, started P${d.grid==null?'–':d.grid}${dp?` (${dp>0?'+':''}${dp})`:''}`)}${kpi('Fastest lap',fmtLap(d.best),d.bestL?'Lap '+d.bestL.lap:'')}${kpi('Median clean lap',fmtLap(d.med),`Std dev ${f3(d.sd)} s over ${d.clean.length} laps`)}${kpi('Pit stops',String(ps.length),ps.map(p=>'L'+p.lap).join(', ')||'None')}${kpi('Ideal lap',fmtLap(d.ideal),d.ideal!=null&&d.best!=null?sgn(d.best-d.ideal)+' s left on the table':'')}${kpi('Strategy',`<span style="font-size:22px">${stratHTML(d)}</span>`,'Compound and laps')}</div>`;
+  return{html:`<div class="stack">${sel}${kp}
+    ${panel('c-dl','Lap time against the field median','Field median is the median clean lap of all drivers on that lap. Pit stops are marked with a line.',{h:520})}
+    ${panel('c-dsec','Sector pace through the race','Each sector minus this driver\'s own best sector, clean laps only',{h:480})}
+    ${panel('c-dpos','Position and gap to the leader','Position at the end of each lap',{h:380})}
+    ${panel('c-dgap','Gap to the leader','Seconds behind at the line',{h:380})}</div>`,
+  mount(){
+    $('#selD').addEventListener('change',e=>{S.drv=+e.target.value;rerender();});
+    const col=tcol(d.color),pl=ps.map(p=>({x:p.lap,label:'Pit'})),cl=d.laps.filter(l=>l.clean);
+    const v=cl.map(l=>l.dur).sort((a,b)=>a-b);
+    lines($('#c-dl'),{aria:'Lap time against field median',h:520,x:[1,M.total],y:v.length?[Math.floor((quant(v,0)-.3)*10)/10,Math.ceil((quant(v,.99)+.3)*10)/10]:undefined,yFmt:fmtLap,xTitle:'Lap',snap:1,bands:winBands(M),vlines:pl,m:{l:76},top:24,xTicks:ticks(1,M.total,12),
+      series:[{id:'f',label:'Field median',color:'var(--muted)',dash:true,w:2,pts:M.fieldMed.map((x,i)=>[i,x]).slice(2)},{id:'d',label:d.code,color:col,w:2.4,pts:d.laps.filter(l=>l.lap>1).map(l=>[l.lap,l.clean?l.dur:null])}],tipFmt:fmtLap,tipTitle:x=>'Lap '+x});
+    const sec=['s1','s2','s3'],sc=['var(--q1)','var(--q2)','var(--q3)'];
+    lines($('#c-dsec'),{aria:'Sector pace',h:480,x:[1,M.total],y:[-.2,1.6],yFmt:v=>sgn(v,1),zero:0,xTitle:'Lap',snap:1,bands:winBands(M),vlines:pl,top:24,xTicks:ticks(1,M.total,12),tipFmt:v=>sgn(v)+' s',tipTitle:x=>'Lap '+x,
+      series:sec.map((k,i)=>({id:k,label:'Sector '+(i+1),color:sc[i],w:2,pts:d.laps.filter(l=>l.lap>1).map(l=>[l.lap,l.clean&&l[k]!=null?l[k]-d.bs[k]:null])}))});
+    lines($('#c-dpos'),{aria:'Position by lap',h:380,x:[0,M.total],y:[1,M.drivers.length],invert:true,yFmt:v=>'P'+v,yTicks:[1,5,10,15,20].filter(t=>t<=M.drivers.length),xFmt:v=>v===0?'Grid':v,xTitle:'Lap',snap:1,bands:winBands(M),vlines:pl,top:24,tipFmt:v=>'P'+v,tipTitle:x=>x===0?'Grid':'End of lap '+x,
+      series:[{id:'p',label:d.code,color:col,w:2.6,pts:[[0,d.grid],...d.laps.map(l=>[l.lap,l.pos])]}]});
+    const mxg=Math.max(10,Math.ceil(Math.max(...d.laps.map(l=>l.gap||0))/10)*10);
+    lines($('#c-dgap'),{aria:'Gap to the leader',h:380,x:[1,M.total],y:[0,mxg],invert:true,yFmt:v=>v+' s',zero:0,xTitle:'Lap',snap:1,bands:winBands(M),vlines:pl,top:24,tipFmt:v=>'+'+f3(v)+' s',tipTitle:x=>'End of lap '+x,
+      series:[{id:'g',label:d.code,color:col,w:2.4,pts:d.laps.map(l=>[l.lap,l.gap])}]});
+  }};
+}
+
+/* ================= CONDITIONS & RACE CONTROL ================= */
+function pgConditions(M){
+  const w=M.weather,has=w.length>0,cats=['all',...new Set(M.rc.map(r=>r.cat).filter(Boolean))];
+  const fm=ms=>ms==null?'–':new Date(ms).toISOString().slice(11,19);
+  const rows=M.rc.filter(r=>(S.rcCat==='all'||r.cat===S.rcCat)&&(!S.rcText||(r.msg+' '+r.flag).toLowerCase().includes(S.rcText.toLowerCase())))
+    .map(r=>`<tr><td class="num">${fm(r.date)}</td><td class="num">${r.lap==null?'–':r.lap}</td><td>${esc(r.cat)}</td><td>${r.flag?`<span class="flag ${esc(r.flag.toLowerCase().replace(/\W+/g,''))}">${esc(r.flag)}</span>`:''}</td><td style="white-space:normal">${esc(r.msg)}</td></tr>`).join('');
+  const log=`<div class="ctrls"><div class="ctl-g"><div class="lbl">Category</div>${segHTML('rcCat',cats.map(c=>[c,c==='all'?'All':c]),S.rcCat)}</div><div class="ctl-g"><div class="lbl">Search</div><input id="rcq" class="sel" type="search" placeholder="car number, turn, penalty" value="${esc(S.rcText)}"></div></div>
+  <div class="tbl"><table><thead><tr><th class="num">Time (UTC)</th><th class="num">Lap</th><th>Category</th><th>Flag</th><th>Message</th></tr></thead><tbody>${rows||'<tr><td colspan="5" class="dim">No messages match.</td></tr>'}</tbody></table></div>`;
+  return{html:`<div class="stack">${has?panel('w-t','Air and track temperature','Degrees Celsius, minutes from the start of lap 1',{h:420})+panel('w-h','Humidity','Percent',{h:300})+panel('w-w','Wind','Metres per second. The tooltip also gives the direction.',{h:300})+panel('w-p','Air pressure','Millibar',{h:300})+panel('w-r','Rainfall','Rain recorded by the track sensor',{h:240}):empty('No weather data in this file.')}
+    <section class="panel"><div class="ph"><h3>Race control log</h3><span class="note">${M.rc.length} messages</span></div>${log}</section></div>`,
+  mount(){
+    const inp=$('#rcq');if(inp)inp.addEventListener('input',e=>{S.rcText=e.target.value;const p=e.target.selectionStart;rerender();const n=$('#rcq');if(n){n.focus();n.setSelectionRange(p,p);}});
+    if(!has)return;
+    const mn=ms=>(ms-M.t0)/60000,x0=Math.floor(mn(w[0].ms)),x1=Math.ceil(mn(w[w.length-1].ms));
+    const bands=M.windows.filter(k=>k.t0&&k.t1).map(k=>({x0:mn(k.t0),x1:mn(k.t1),label:k.kind}));
+    const base={x:[x0,x1],xFmt:v=>v+' min',xTitle:'Minutes from the start of lap 1',bands,vlines:[{x:0,label:'Start'}],top:24,m:{l:64},tipTitle:x=>Math.round(x)+' min'};
+    const ser=(k,l,c)=>({id:k,label:l,color:c,w:2.2,pts:w.filter(r=>r[k]!=null).map(r=>[Math.round(mn(r.ms)),r[k]])});
+    const dom=(k,pad)=>{const v=w.map(r=>r[k]).filter(x=>x!=null);return v.length?[Math.floor(Math.min(...v)-pad),Math.ceil(Math.max(...v)+pad)]:[0,1];};
+    const tv=w.flatMap(r=>[r.air,r.track]).filter(x=>x!=null);
+    lines($('#w-t'),{...base,aria:'Temperatures',h:420,y:[Math.floor(Math.min(...tv)-1),Math.ceil(Math.max(...tv)+1)],yFmt:v=>v+'°',series:[ser('track','Track','var(--q1)'),ser('air','Air','var(--q3)')],tipFmt:v=>f1(v)+'°C',snap:1});
+    lines($('#w-h'),{...base,aria:'Humidity',h:300,y:dom('hum',2),yFmt:v=>v+'%',series:[ser('hum','Humidity','var(--q2)')],tipFmt:v=>f1(v)+'%',snap:1});
+    const wm=new Map(w.map(r=>[Math.round(mn(r.ms)),r]));
+    lines($('#w-w'),{...base,aria:'Wind',h:300,y:[0,Math.max(4,Math.ceil(Math.max(...w.map(r=>r.wind||0))+1))],yFmt:v=>v,series:[ser('wind','Wind speed','var(--q1)')],snap:1,
+      tip:xv=>{const r=wm.get(xv);return r?tipRows(Math.round(xv)+' min',[['Speed',f1(r.wind)+' m/s'],['Direction',Math.round(r.dir)+'°']]):null;}});
+    lines($('#w-p'),{...base,aria:'Pressure',h:300,y:dom('press',1),yFmt:v=>v,series:[ser('press','Pressure','var(--q3)')],tipFmt:v=>f1(v)+' mbar',snap:1});
+    const rain=w.some(r=>r.rain>0);
+    lines($('#w-r'),{...base,aria:'Rainfall',h:240,y:[-.1,1.1],yTicks:[0,1],yFmt:v=>v?'rain':'dry',series:[ser('rain','Rain','var(--q1)')],tipFmt:v=>v?'rain':'dry',snap:1});
+    if(!rain)$('#w-r').insertAdjacentHTML('beforebegin','<div class="statline">No rainfall was recorded during this session.</div>');
+  }};
+}
+
+/* ================= DATA ================= */
+function pgData(M){
+  const m=M.meta,tc=Object.keys(M.telCache).length;
+  const cnt=(M.loadInfo||[]).map(x=>`<tr><td>${esc(x[0])}</td><td class="num">${x[1]}</td><td class="num">${x[2]==null?'–':x[2]+' ms'}</td><td>${x[3]?'<span class="dim">'+esc(x[3])+'</span>':''}</td></tr>`).join('');
+  const map=[['Overview','session_result, starting_grid, laps, stints, pit, race_control','Classification, grid, fastest laps, strategy'],
+    ['Race progress','position, laps (date_start)','Position and gap at every line crossing (races and sprints)'],
+    ['Lap times','laps (lap_duration), race_control','Clean laps, pace ranking, spread'],
+    ['Tyres','stints, laps','Compound, tyre age at start, wear trend per stint'],
+    ['Pit stops','pit, laps, position','Lane time, stationary time, time lost, places changed'],
+    ['Sectors and speed','laps (duration_sector_1-3, i1_speed, i2_speed, st_speed)','Best sectors, ideal lap, speed trap'],
+    ['Telemetry','car_data, location, laps','Any timed lap: speed, throttle, brake, gear, rpm, DRS, track position'],
+    ['Driver','laps, position, stints, pit','One driver against the field'],
+    ['Conditions','weather, race_control','Temperatures, humidity, wind, rain, flags and messages']];
+  const lim=['Engine and energy store data, including battery charge and harvesting','Tyre and brake temperatures, tyre pressures, fuel load','Car setup, wing levels, ride height, steering angle','Official track map, corner numbers and names (corners here are found from speed minima)','Telemetry for laps the service has no car data for (some sessions have none)'];
+  return{html:`<div class="stack">
+    <section class="panel"><div class="ph"><h3>Loaded session</h3><button type="button" class="btn" id="reload">Reload from OpenF1</button></div>
+      <div class="kv"><div><span class="lbl">Event</span>${esc(m.meeting||'')}</div><div><span class="lbl">Session</span>${esc(m.session_name||'')}</div><div><span class="lbl">Circuit</span>${esc(m.circuit||'')}, ${esc(m.country||'')}</div><div><span class="lbl">Season</span>${esc(m.year||'')}</div><div><span class="lbl">Laps</span>${M.total}</div><div><span class="lbl">Loaded</span>${esc(m.fetched||'')}</div></div>
+      <div class="tbl"><table><thead><tr><th>OpenF1 table</th><th class="num">Rows</th><th class="num">Time</th><th>Note</th></tr></thead><tbody>${cnt}</tbody></table></div>
+      <p class="foot">Telemetry laps loaded so far: ${tc}. Responses are cached on your computer, so a session you opened before loads instantly. Use Reload if a session was still running when you first opened it.</p></section>
+    <section class="panel"><div class="ph"><h3>Save or open a file</h3><span class="note">Optional. A saved race.json can be opened on any copy of this dashboard.</span></div>
+      <div class="ctrls" style="border:0;padding:0"><button type="button" class="btn" id="dl">Save this session as race.json</button></div>
+      <label class="drop" id="drop" for="file" style="margin-top:14px"><b>Open a saved race.json</b><span>drop it here or click to choose</span></label><input type="file" id="file" accept=".json,application/json" hidden>
+      <div class="statline" id="loadMsg">${esc(S.loadMsg)}</div></section>
+    <section class="panel"><div class="ph"><h3>Where each page gets its data</h3></div><div class="tbl"><table><thead><tr><th>Page</th><th>OpenF1 tables</th><th>What it shows</th></tr></thead><tbody>${map.map(r=>`<tr><td>${r[0]}</td><td class="mono" style="white-space:normal">${r[1]}</td><td style="white-space:normal">${r[2]}</td></tr>`).join('')}</tbody></table></div></section>
+    <section class="panel"><div class="ph"><h3>Not available from this source</h3></div><ul class="lim">${lim.map(x=>`<li>${x}</li>`).join('')}</ul></section></div>`,
+  mount(){
+    $('#reload').addEventListener('click',()=>reloadSession());
+    $('#dl').addEventListener('click',()=>exportRaw(M));
+    const file=$('#file'),drop=$('#drop');
+    const read=f=>{if(!f)return;const fr=new FileReader();fr.onload=()=>{try{loadRaw(JSON.parse(fr.result),f.name);}catch(e){S.loadMsg='Could not read that file: '+e.message;$('#loadMsg').textContent=S.loadMsg;}};fr.readAsText(f);};
+    file.addEventListener('change',e=>read(e.target.files[0]));
+    ['dragenter','dragover'].forEach(ev=>drop.addEventListener(ev,e=>{e.preventDefault();drop.classList.add('over');}));
+    ['dragleave','drop'].forEach(ev=>drop.addEventListener(ev,e=>{e.preventDefault();drop.classList.remove('over');}));
+    drop.addEventListener('drop',e=>read(e.dataTransfer.files[0]));
+  }};
+}
+
+/* ================= live data from OpenF1 (through the local server) ================= */
+let RID=0,LOADTOK=0;
+const LS={get:k=>{try{return localStorage.getItem(k);}catch(e){return null;}},set:(k,v)=>{try{localStorage.setItem(k,v);}catch(e){}}};
+const eq=(k,v)=>k+'='+encodeURIComponent(v),ge=(k,v)=>k+'>='+encodeURIComponent(v),le=(k,v)=>k+'<='+encodeURIComponent(v);
+async function api(ep,toks,fresh){
+  const q=[...(toks||[]),...(fresh?['nocache=1']:[])].join('&');
+  let r;try{r=await fetch('/api/'+ep+(q?'?'+q:''));}catch(e){throw new Error('Cannot reach the local server. Is pitwall.py still running?');}
+  let j=null;try{j=await r.json();}catch(e){}
+  if(!r.ok||!Array.isArray(j))throw new Error(`${ep}: ${(j&&(j.error||j.detail))||('HTTP '+r.status)}`);
+  return j;
+}
+const kindOf=s=>{const n=(s.session_name||'').toLowerCase(),t=(s.session_type||'').toLowerCase();
+  if(/qualifying|shootout/.test(n))return'quali';if(/sprint/.test(n))return'sprint';if(/race/.test(n))return'race';if(/practice/.test(n))return'practice';
+  return t==='race'?'race':t==='qualifying'?'quali':'practice';};
+const NAV=[['overview','Overview',pgOverview,'Who finished where, and what decided it',()=>true],
+  ['progress','Race progress',pgProgress,'How the race unfolded, lap by lap',M=>M.raceLike],
+  ['laptimes','Lap times',pgLaps,'Who was quick, and how steady',()=>true],
+  ['tyres','Tyres',pgTyres,'Stints and how each compound wore',()=>true],
+  ['pits','Pit stops',pgPits,'Stop times, timing and what they cost',()=>true],
+  ['sectors','Sectors & speed',pgSectors,'Where the lap time came from',()=>true],
+  ['telemetry','Telemetry',pgTelemetry,'Any two laps compared, metre by metre',()=>true],
+  ['driver','Driver',pgDriver,'One driver against the field',()=>true],
+  ['conditions','Conditions',pgConditions,'Weather, flags and race control',()=>true],
+  ['data','Data',pgData,'What is loaded, and where it came from',()=>true]];
+const CUR={meetings:[],sessions:[],session:null};
+const setStatus=(t,err)=>{const e=$('#loadst');e.textContent=t||'';e.className=err?'err':'';e.hidden=!t;};
+
+/* ---- pickers ---- */
+function opt(v,t,sel,dis){return`<option value="${esc(v)}" ${sel?'selected':''} ${dis?'disabled':''}>${esc(t)}</option>`;}
+const dstr=s=>s?new Date(pd(s)).toISOString().slice(0,10):'';
+async function loadMeetings(year,pickKey){
+  setStatus('Loading race weekends…');
+  const ms=await api('meetings',[eq('year',year)]);ms.sort((a,b)=>pd(a.date_start)-pd(b.date_start));CUR.meetings=ms;
+  const now=Date.now();let sel=pickKey&&ms.find(m=>String(m.meeting_key)===String(pickKey));
+  if(!sel){const past=ms.filter(m=>pd(m.date_start)<now);sel=past.length?past[past.length-1]:ms[0];}
+  $('#selMeet').innerHTML=ms.map(m=>opt(m.meeting_key,`${m.meeting_name||m.meeting_official_name} · ${m.country_name||m.location||''} · ${dstr(m.date_start)}`,sel&&m.meeting_key===sel.meeting_key,pd(m.date_start)>now)).join('')||opt('','No weekends found',true,true);
+  setStatus('');
+  return sel;
+}
+async function loadSessions(meeting,pickKey){
+  setStatus('Loading sessions…');
+  const ss=await api('sessions',[eq('meeting_key',meeting.meeting_key)]);ss.sort((a,b)=>pd(a.date_start)-pd(b.date_start));CUR.sessions=ss;
+  const now=Date.now(),done=s=>s.date_end&&pd(s.date_end)<now;
+  let sel=pickKey&&ss.find(s=>String(s.session_key)===String(pickKey));
+  if(!sel){sel=ss.find(s=>/^race$/i.test(s.session_name)&&done(s))||[...ss].reverse().find(done)||ss[0];}
+  $('#selSess').innerHTML=ss.map(s=>opt(s.session_key,`${s.session_name} · ${dstr(s.date_start)}${done(s)?'':' (not finished)'}`,sel&&s.session_key===sel.session_key,!done(s))).join('')||opt('','No sessions',true,true);
+  setStatus('');
+  return sel&&done(sel)?sel:null;
+}
+async function chooseYear(y,pm,ps){
+  try{const m=await loadMeetings(y,pm);if(!m){return;}const s=await loadSessions(m,ps);if(s)await loadSession(s);}catch(e){setStatus(e.message,true);showError(e.message);}
+}
+const showError=msg=>{if(!S.M)$('#main').innerHTML=`<header class="ph1"><h1>Could not load</h1></header>${empty(esc(msg))}`;};
+
+/* ---- session loading ---- */
+async function loadSession(sess,fresh){
+  const tok=++LOADTOK,sk=sess.session_key,kind=kindOf(sess),raceLike=kind==='race'||kind==='sprint';
+  const meeting=CUR.meetings.find(m=>m.meeting_key===sess.meeting_key)||{};
+  const steps=[['drivers',1],['laps',1],['stints'],['pit'],['session_result'],(raceLike||kind==='quali')?['starting_grid']:null,['race_control'],['weather'],raceLike?['position']:null].filter(Boolean);
+  const got={},info=[];
+  LS.set('pw.session',sk);LS.set('pw.meeting',sess.meeting_key);
+  for(let i=0;i<steps.length;i++){
+    const [ep,fatal]=steps[i];setStatus(`Loading ${ep.replace('_',' ')} (${i+1} of ${steps.length})…`);
+    const t0=performance.now();
+    try{got[ep]=await api(ep,[eq('session_key',sk)],fresh);info.push([ep,got[ep].length,Math.round(performance.now()-t0),got[ep].length?'':'no rows']);}
+    catch(e){if(fatal){setStatus(e.message,true);showError(e.message);return;}got[ep]=[];info.push([ep,0,Math.round(performance.now()-t0),e.message]);}
+    if(tok!==LOADTOK)return;
+  }
+  if(!got.drivers.length||!got.laps.length){const m=`OpenF1 returned no ${got.drivers.length?'laps':'drivers'} for this session.`;setStatus(m,true);showError(m);return;}
+  const seen=new Set(),drivers=[];
+  got.drivers.forEach(d=>{if(seen.has(d.driver_number))return;seen.add(d.driver_number);
+    drivers.push({n:d.driver_number,code:d.name_acronym||String(d.driver_number),name:d.full_name||d.broadcast_name||String(d.driver_number),team:d.team_name||'',color:'#'+(d.team_colour||'888888').replace('#','')});});
+  const grid={};got.starting_grid&&got.starting_grid.forEach(g=>{grid[g.driver_number]=g.position;});
+  const laps={};let total=0;
+  got.laps.forEach(l=>{(laps[l.driver_number]=laps[l.driver_number]||[]).push([l.lap_number,l.date_start,l.lap_duration,l.duration_sector_1,l.duration_sector_2,l.duration_sector_3,l.i1_speed,l.i2_speed,l.st_speed,!!l.is_pit_out_lap]);total=Math.max(total,l.lap_number);});
+  Object.values(laps).forEach(a=>a.sort((x,y)=>x[0]-y[0]));
+  const raw={meta:{sample:false,source:'OpenF1',session_key:sk,meeting:meeting.meeting_name||meeting.meeting_official_name||sess.location,circuit:sess.circuit_short_name,country:sess.country_name,year:sess.year,
+      session_name:sess.session_name,session_type:sess.session_type,kind,date_start:sess.date_start,date_end:sess.date_end,total_laps:total,fetched:new Date().toLocaleString()},
+    drivers,laps,tel:{},
+    results:(got.session_result||[]).map(r=>({n:r.driver_number,pos:r.position,grid:grid[r.driver_number]==null?null:grid[r.driver_number],laps:r.number_of_laps,dur:r.duration,gap:r.gap_to_leader,dnf:!!r.dnf,dns:!!r.dns,dsq:!!r.dsq})),
+    stints:(got.stints||[]).map(x=>[x.driver_number,x.stint_number,x.compound,x.lap_start,x.lap_end,x.tyre_age_at_start||0]),
+    pits:(got.pit||[]).map(x=>[x.driver_number,x.lap_number,x.date,x.lane_duration!=null?x.lane_duration:x.pit_duration,x.stop_duration==null?null:x.stop_duration]),
+    positions:(got.position||[]).map(x=>[x.driver_number,x.date,x.position]),
+    rc:(got.race_control||[]).map(x=>[x.date,x.lap_number,x.category,x.flag,x.scope,x.sector,x.driver_number,x.message]),
+    weather:(got.weather||[]).map(x=>[x.date,x.air_temperature,x.track_temperature,x.humidity,x.pressure,x.rainfall,x.wind_speed,x.wind_direction])};
+  setStatus('');
+  loadRaw(raw,null,info);
+}
+const reloadSession=()=>{if(CUR.session)loadSession(CUR.session,true);};
+function loadRaw(raw,name,info){
+  if(!raw||!raw.drivers||!raw.laps)throw new Error('missing drivers or laps');
+  S.M=prepare(raw);S.M.loadInfo=info||[['file',Object.keys(raw.laps).length,null,name||'']];
+  S.sel=new Set(S.M.drivers.slice(0,5).map(d=>d.n));S.drv=S.M.drivers[0].n;S.tA=S.tB=S.comp=null;S.a=S.b=null;
+  S.loadMsg=name?`Opened ${name}: ${S.M.drivers.length} drivers, ${S.M.total} laps.`:'';
+  CUR.session=CUR.sessions.find(s=>s.session_key===raw.meta.session_key)||CUR.session;
+  $('#selFocus').innerHTML=S.M.drivers.map(d=>opt(d.n,`${d.code} · ${d.name}`,d.n===S.drv)).join('');$('#focusG').hidden=false;
+  const vis=NAV.filter(n=>n[4](S.M)).map(n=>n[0]);if(!vis.includes((location.hash||'#overview').slice(1)))location.hash='#overview';
+  rerender();scrollTo(0,0);
+}
+
+/* ---- telemetry for one lap ---- */
+async function loadTel(M,n,lapNo){
+  const key=n+':'+lapNo;if(M.telCache[key])return M.telCache[key];
+  M._telP=M._telP||{};if(M._telP[key])return M._telP[key];
+  const d=M.byN.get(n),l=d&&d.lapBy.get(lapNo);
+  if(!l||l.start==null||l.dur==null)throw new Error('This lap has no start time or lap time, so there is no telemetry window.');
+  const iso=ms=>new Date(ms).toISOString().replace('Z','+00:00');
+  const toks=[eq('session_key',M.meta.session_key),eq('driver_number',n),ge('date',iso(l.start)),le('date',iso(l.start+l.dur*1000+400))];
+  const p=(async()=>{
+    const car=await api('car_data',toks);
+    if(car.length<30)throw new Error(`OpenF1 has no car data for ${d.code} on lap ${lapNo} in this session (${car.length} samples).`);
+    let loc=[];try{loc=await api('location',toks);}catch(e){}
+    car.sort((a,b)=>pd(a.date)-pd(b.date));loc.sort((a,b)=>pd(a.date)-pd(b.date));
+    const lt=loc.map(r=>pd(r.date)),at=(ts,k)=>{if(!lt.length)return null;if(ts<=lt[0])return loc[0][k];if(ts>=lt[lt.length-1])return loc[loc.length-1][k];
+      let lo=0,hi=lt.length-1;while(hi-lo>1){const m=(lo+hi)>>1;if(lt[m]<=ts)lo=m;else hi=m;}const w=lt[hi]!==lt[lo]?(ts-lt[lo])/(lt[hi]-lt[lo]):0;return loc[lo][k]+w*(loc[hi][k]-loc[lo][k]);};
+    const o={lap:lapNo,dur:l.dur,t:[],speed:[],thr:[],brk:[],gear:[],rpm:[],drs:[],x:[],y:[]};
+    car.forEach(r=>{const ts=pd(r.date),t=(ts-l.start)/1000;if(t<-0.3||t>l.dur+0.4)return;
+      o.t.push(Math.round(t*1000)/1000);o.speed.push(r.speed);o.thr.push(r.throttle);o.brk.push(r.brake);o.gear.push(r.n_gear);o.rpm.push(r.rpm);o.drs.push(r.drs);
+      const x=at(ts,'x'),y=at(ts,'y');o.x.push(x==null?null:Math.round(x));o.y.push(y==null?null:Math.round(y));});
+    if(o.t.length<30)throw new Error('The car data for this lap does not line up with the lap times.');
+    M.telCache[key]=o;return o;
+  })();
+  M._telP[key]=p;p.catch(()=>{delete M._telP[key];});return p;
+}
+function exportRaw(M){
+  const out={...M.raw,tel:{}};[S.tA,S.tB].forEach(t=>{if(t&&M.telCache[t.n+':'+t.lap]&&!out.tel[t.n])out.tel[t.n]=M.telCache[t.n+':'+t.lap];});
+  const blob=new Blob([JSON.stringify(out)],{type:'application/json'}),a=document.createElement('a');
+  a.href=URL.createObjectURL(blob);a.download=`${M.meta.year}-${(M.meta.meeting||'race').replace(/\W+/g,'-')}-${(M.meta.session_name||'').replace(/\W+/g,'-')}.json`.toLowerCase();
+  document.body.appendChild(a);a.click();a.remove();setTimeout(()=>URL.revokeObjectURL(a.href),4000);
+}
+
+/* ---- router ---- */
+function render(){
+  ROS.forEach(r=>r.disconnect());ROS=[];hideTip();RID++;
+  const M=S.M;
+  const vis=NAV.filter(n=>!M||n[4](M));
+  $('#nav').innerHTML=vis.map(n=>`<a href="#${n[0]}" data-id="${n[0]}">${n[1]}</a>`).join('');
+  const id=(location.hash||'#overview').slice(1),pg=vis.find(n=>n[0]===id)||vis[0];
+  $$('#nav a').forEach(a=>{const on=a.dataset.id===pg[0];a.classList.toggle('on',on);if(on)a.setAttribute('aria-current','page');});
+  if(!M){$('#sess').innerHTML='<b>No session loaded</b>';$('#main').innerHTML=`<header class="ph1"><h1>Pit Wall Debrief</h1><p class="lead">Choose a season, race weekend and session on the left. Practice, qualifying, sprint and race sessions all work.</p></header>${$('#loadst').textContent?'':empty('Loading the calendar from OpenF1…')}`;return;}
+  const m=M.meta;
+  $('#sess').innerHTML=`<b>${esc(m.meeting||'')}</b><span>${esc(m.session_name||'')} · ${esc(m.circuit||'')} · ${esc(m.year||'')}</span>`;
+  $('#sumtxt').textContent=`${m.meeting||''} · ${m.session_name||''}`;
+  let out;try{out=pg[2](M);}catch(e){console.error(e);$('#main').innerHTML=`<header class="ph1"><h1>${pg[1]}</h1></header>`+empty('This page could not be drawn: '+esc(e.message));return;}
+  $('#main').innerHTML=`<header class="ph1"><h1>${pg[1]}</h1><p class="lead">${pg[3]}</p></header>${out.html}`;
+  try{out.mount();}catch(e){console.error(e);}
+  $$('[data-seg]').forEach(g=>$$('button',g).forEach(b=>b.addEventListener('click',()=>{S[g.dataset.seg]=b.dataset.v;rerender();})));
+}
+function rerender(){const y=scrollY;render();scrollTo(0,y);}
+async function init(){
+  addEventListener('hashchange',()=>{render();scrollTo(0,0);});
+  try{matchMedia('(prefers-color-scheme: light)').addEventListener('change',rerender);}catch(e){}
+  new MutationObserver(()=>rerender()).observe(document.documentElement,{attributes:true,attributeFilter:['data-theme']});
+  const cy=new Date().getFullYear(),ys=[];for(let y=cy;y>=2023;y--)ys.push(y);
+  const savedMeet=LS.get('pw.meeting'),savedSess=LS.get('pw.session');
+  $('#selYear').innerHTML=ys.map(y=>opt(y,y,false)).join('');
+  $('#selYear').addEventListener('change',e=>{S.M=null;chooseYear(+e.target.value);});
+  $('#selMeet').addEventListener('change',async e=>{const m=CUR.meetings.find(x=>String(x.meeting_key)===e.target.value);if(!m)return;try{const s=await loadSessions(m);if(s)await loadSession(s);}catch(er){setStatus(er.message,true);}});
+  $('#selSess').addEventListener('change',async e=>{const s=CUR.sessions.find(x=>String(x.session_key)===e.target.value);if(s)try{await loadSession(s);}catch(er){setStatus(er.message,true);}});
+  $('#selFocus').addEventListener('change',e=>{S.drv=+e.target.value;const d=S.M.byN.get(S.drv);S.tA={n:d.n,lap:fastestLapNo(d)};S.tB=null;rerender();});
+  if(matchMedia('(min-width:901px)').matches)$('#pick').open=true;
+  render();
+  // choose the year of the saved meeting if known, else the current year, falling back one year when the season has no finished weekend yet
+  let y=+LS.get('pw.year')||cy;
+  const pick=y2=>{$('#selYear').value=String(y2);LS.set('pw.year',y2);return chooseYear(y2,savedMeet,savedSess);};
+  $('#selYear').addEventListener('change',e=>LS.set('pw.year',e.target.value));
+  try{await pick(y);}catch(e){setStatus(e.message,true);}
+}
+
+init();
+</script>
