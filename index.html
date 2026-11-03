@@ -1,88 +1,78 @@
 <meta charset="utf-8">
 <title>Pit Wall Debrief</title>
 <meta name="claude:viewport-fit-sides" content="cover">
-<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@500;600;700&family=IBM+Plex+Sans:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500&display=swap">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:ital,wght@1,700;1,800&family=Titillium+Web:wght@400;600;700&family=IBM+Plex+Mono:wght@400;500&display=swap">
 <style>
 /* Layout concept: a post-race engineering room. Fixed page list on the left, one analysis per page,
    charts as wide as the screen allows. Colour means one thing each: team (line), tyre compound (chip),
    faster/slower (blue/red), never decoration. */
 :root{
   color-scheme:dark;
-  --plane:#0d0d0d;--surface:#1a1a19;--surface-2:#232321;
-  --ink:#f0efec;--ink-2:#c3c2b7;--muted:#9a9890;
-  --grid:#2c2c2a;--axis:#4a4a46;--border:rgba(255,255,255,.10);
-  --hot:#e66767;--cold:#4a95ee;--mid:#383835;--gain:#4a95ee;--loss:#e66767;--good:#0ca30c;--warn:#fab219;--crit:#d03b3b;
-  --q1:#3987e5;--q2:#d95926;--q3:#199e70;
-  --c-s:#e66767;--c-m:#f2c230;--c-h:#e6e5df;--c-i:#2fb36b;--c-w:#4a95ee;
-  --c-s-ink:#0b0b0b;--c-m-ink:#0b0b0b;--c-h-ink:#0b0b0b;--c-i-ink:#0b0b0b;--c-w-ink:#0b0b0b;
+  --plane:#0A0A0D;--side:#101017;--surface:#15151E;--surface-2:#1C1C28;
+  --ink:#F4F4F6;--ink-2:#C4C4D4;--muted:#A4A4B8;
+  --grid:#2A2A38;--axis:#3E3E52;--border:#2A2A38;
+  --red:#E10600;--red-hi:#FF4A42;
+  --hot:#FF6B64;--cold:#5B9BF0;--mid:#2A2A38;--gain:#5B9BF0;--loss:#FF6B64;--good:#00D26A;--warn:#FFD700;--crit:#E10600;
+  --q1:#5B9BF0;--q2:#FF8000;--q3:#00D26A;
+  --c-s:#E10600;--c-m:#FFD700;--c-h:#F4F4F6;--c-i:#00D26A;--c-w:#5B9BF0;
+  --c-s-ink:#fff;--c-m-ink:#0A0A0D;--c-h-ink:#0A0A0D;--c-i-ink:#0A0A0D;--c-w-ink:#0A0A0D;
   --f-display:'Barlow Condensed','Arial Narrow',system-ui,sans-serif;
-  --f-body:'IBM Plex Sans',system-ui,-apple-system,'Segoe UI',sans-serif;
+  --f-body:'Titillium Web',system-ui,-apple-system,'Segoe UI',sans-serif;
   --f-mono:'IBM Plex Mono',ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;
-  --gut:max(16px,env(safe-area-inset-left,0px));
-}
-@media (prefers-color-scheme:light){
-  :root:not([data-theme="dark"]){
-    color-scheme:light;
-    --plane:#f9f9f7;--surface:#fcfcfb;--surface-2:#f3f2ee;
-    --ink:#0b0b0b;--ink-2:#52514e;--muted:#6f6d68;
-    --grid:#e1e0d9;--axis:#c3c2b7;--border:rgba(11,11,11,.12);
-    --hot:#d03b3b;--cold:#2a78d6;--mid:#f0efec;--gain:#2a78d6;--loss:#d03b3b;
-    --q1:#2a78d6;--q2:#eb6834;--q3:#1baf7a;
-    --c-s:#d03b3b;--c-m:#e0a410;--c-h:#4a4a47;--c-i:#1a8f50;--c-w:#2a78d6;
-    --c-s-ink:#fff;--c-m-ink:#0b0b0b;--c-h-ink:#fff;--c-i-ink:#fff;--c-w-ink:#fff;
-  }
-}
-:root[data-theme="light"]{
-  color-scheme:light;
-  --plane:#f9f9f7;--surface:#fcfcfb;--surface-2:#f3f2ee;
-  --ink:#0b0b0b;--ink-2:#52514e;--muted:#6f6d68;
-  --grid:#e1e0d9;--axis:#c3c2b7;--border:rgba(11,11,11,.12);
-  --hot:#d03b3b;--cold:#2a78d6;--mid:#f0efec;--gain:#2a78d6;--loss:#d03b3b;
-  --q1:#2a78d6;--q2:#eb6834;--q3:#1baf7a;
-  --c-s:#d03b3b;--c-m:#e0a410;--c-h:#4a4a47;--c-i:#1a8f50;--c-w:#2a78d6;
-  --c-s-ink:#fff;--c-m-ink:#0b0b0b;--c-h-ink:#fff;--c-i-ink:#fff;--c-w-ink:#fff;
 }
 *{box-sizing:border-box}
-body{background:var(--plane);color:var(--ink);font-family:var(--f-body);font-size:14px;line-height:1.5;padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px));padding-block:0 60px}
+body{background:var(--plane);color:var(--ink);font-family:var(--f-body);font-size:15px;line-height:1.5;margin:0}
 button,select,input{font:inherit;color:inherit}
-:focus-visible{outline:2px solid var(--ink);outline-offset:2px}
+:focus-visible{outline:2px solid var(--red-hi);outline-offset:2px}
 code,.mono{font-family:var(--f-mono);font-variant-numeric:tabular-nums}
-code{font-size:12px;background:var(--surface-2);padding:1px 5px;border-radius:3px}
-.lbl{font-family:var(--f-mono);font-size:11px;letter-spacing:.08em;text-transform:uppercase;color:var(--muted)}
-.dim{color:var(--ink-2)}.up{color:var(--gain)}.down{color:var(--loss)}.purple{color:#b36bf0;font-weight:500}
-body::before{content:"";position:fixed;inset:0 0 auto;height:env(safe-area-inset-top,0px);background:var(--plane);z-index:40}
+code{font-size:12px;background:var(--surface-2);padding:1px 5px;border-radius:2px}
+.lbl{font-family:var(--f-mono);font-size:11px;letter-spacing:.12em;text-transform:uppercase;color:var(--muted)}
+.dim{color:var(--ink-2)}.up{color:var(--good)}.down{color:var(--loss)}.purple{color:#C98BFF;font-weight:600}
 
-.app{display:grid;grid-template-columns:230px minmax(0,1fr);gap:0 28px;max-width:1680px;margin:0 auto}
-.side{position:sticky;top:env(safe-area-inset-top,0px);align-self:start;height:calc(100vh - env(safe-area-inset-top,0px));overflow-y:auto;padding:22px 0 24px;display:flex;flex-direction:column;gap:18px}
-.brand h1{font-family:var(--f-display);font-weight:700;font-size:30px;letter-spacing:.04em;text-transform:uppercase;line-height:1;margin:0}
-#sess{display:flex;flex-direction:column;margin-top:8px;font-size:12px;color:var(--ink-2);line-height:1.4}
-#sess b{font-weight:600;color:var(--ink);font-size:13px}
-#nav{display:flex;flex-direction:column;gap:2px}
-#nav a{display:block;padding:8px 12px;border-radius:4px;color:var(--ink-2);text-decoration:none;font-size:14px;border-left:3px solid transparent}
-#nav a:hover{background:var(--surface-2);color:var(--ink)}
-#nav a.on{background:var(--surface-2);color:var(--ink);font-weight:500;border-left-color:var(--ink)}
-#unused{font-family:var(--f-mono);font-size:11px;color:var(--ink-2);border:1px dashed var(--axis);padding:8px 10px;border-radius:4px;line-height:1.4}
-#sample a{color:var(--ink)}
-main{min-width:0;padding:26px 0 0}
-.ph1{margin-bottom:18px}
-.ph1 h1{font-family:var(--f-display);font-weight:600;font-size:46px;letter-spacing:.02em;text-transform:uppercase;line-height:1;margin:0}
-.lead{margin:6px 0 0;color:var(--ink-2);font-size:15px;max-width:70ch}
+.app{display:flex;flex-wrap:wrap;min-height:100vh}
+.side{flex:0 0 264px;background:var(--side);border-right:1px solid var(--grid);padding:28px 20px 24px;display:flex;flex-direction:column;gap:26px;position:sticky;top:0;align-self:flex-start;height:100vh;overflow-y:auto}
+.brand{display:flex;flex-direction:column;gap:12px}
+.brand h1{font-family:var(--f-display);font-style:italic;font-weight:800;font-size:30px;letter-spacing:.5px;text-transform:uppercase;line-height:.95;margin:0;padding-left:22px;position:relative}
+.brand h1::before{content:"";position:absolute;left:0;top:1px;width:10px;height:100%;background:var(--red);transform:skewX(-16deg)}
+#sess{display:flex;flex-direction:column;font-family:var(--f-mono);font-size:12px;color:var(--ink-2);line-height:1.5}
+#sess b{font-weight:500;color:var(--ink)}
+#nav{display:flex;flex-direction:column;gap:2px;counter-reset:nv}
+#nav a{display:flex;align-items:center;padding:11px 12px;color:var(--ink-2);text-decoration:none;font-size:16px;font-weight:600;letter-spacing:.3px;border-radius:2px}
+#nav a::before{counter-increment:nv;content:counter(nv,decimal-leading-zero);font-family:var(--f-mono);font-size:11px;font-weight:400;color:var(--muted);width:24px}
+#nav a:hover{background:var(--surface);color:var(--ink)}
+#nav a.on{background:var(--surface-2);color:#fff}
+#nav a.on::before{color:var(--red-hi)}
+.srcnote{margin-top:auto;border-top:1px solid var(--grid);padding-top:14px;font-family:var(--f-mono);font-size:11px;line-height:1.6;color:var(--muted)}
+.content{flex:999 1 640px;min-width:0;display:flex;flex-direction:column}
+#tabs{display:flex;flex-wrap:wrap;gap:4px;align-items:center;padding:18px 40px;background:var(--side);border-bottom:1px solid var(--grid);min-height:68px}
+#tabs button{cursor:pointer;font-weight:700;font-size:14px;letter-spacing:.8px;text-transform:uppercase;padding:9px 16px;transform:skewX(-12deg);background:var(--surface-2);color:var(--ink-2);border:1px solid var(--grid)}
+#tabs button:hover:not(:disabled){color:#fff;border-color:var(--axis)}
+#tabs button[aria-pressed="true"]{background:var(--red);border-color:var(--red);color:#fff}
+#tabs button:disabled{opacity:.4;cursor:not-allowed}
+#tabs .when{margin-left:auto;font-family:var(--f-mono);font-size:12px;letter-spacing:1px;color:var(--muted);text-transform:uppercase}
+main{min-width:0;padding:0 40px 60px}
+.ph1{position:relative;margin:0 -40px 28px;padding:36px 40px 30px;border-bottom:1px solid var(--grid);background:linear-gradient(100deg,var(--surface) 0%,var(--plane) 70%);overflow:hidden}
+.ph1::before{content:"";position:absolute;top:0;right:0;width:360px;height:100%;opacity:.5;background:repeating-linear-gradient(135deg,transparent 0 22px,var(--surface-2) 22px 44px)}
+.ph1::after{content:"";position:absolute;right:40px;bottom:30px;width:112px;height:56px;background:repeating-conic-gradient(#F4F4F6 0 25%,#0A0A0D 0 50%) 0 0/28px 28px}
+.ph1>*{position:relative;z-index:1}
+.ph1 h1{font-family:var(--f-display);font-style:italic;font-weight:800;font-size:72px;letter-spacing:-.5px;text-transform:uppercase;line-height:.95;margin:0}
+.lead{margin:8px 0 0;color:var(--ink-2);font-size:16px;max-width:64ch}
 .stack{display:flex;flex-direction:column;gap:20px}
 @media (max-width:900px){
-  .app{grid-template-columns:minmax(0,1fr)}
-  .side{position:sticky;height:auto;overflow:visible;z-index:30;background:var(--plane);padding:10px 0;gap:6px;margin-inline:calc(-1*max(16px,env(safe-area-inset-left,0px)));padding-inline:max(16px,env(safe-area-inset-left,0px));border-bottom:1px solid var(--border)}
-  .brand{display:flex;align-items:baseline;gap:12px;flex-wrap:wrap}.brand h1{font-size:24px}#sess{margin:0;flex-direction:row;gap:8px}
+  .side{flex:1 1 100%;position:static;height:auto;overflow:visible;padding:14px 16px;gap:10px;border-right:0;border-bottom:1px solid var(--grid)}
+  .brand{flex-direction:row;align-items:center;flex-wrap:wrap;gap:12px}.brand h1{font-size:24px}#sess{display:none}
   #nav{flex-direction:row;overflow-x:auto;gap:2px;padding-bottom:2px}
-  #nav a{white-space:nowrap;border-left:0;border-bottom:3px solid transparent;padding:6px 10px}
-  #nav a.on{border-bottom-color:var(--ink)}
-  
-  .ph1 h1{font-size:36px}
+  #nav a{white-space:nowrap;padding:8px 12px;font-size:15px}#nav a::before{display:none}
+  .srcnote{display:none}
+  #tabs{padding:12px 16px}#tabs .when{display:none}
+  main{padding:0 16px 48px}
+  .ph1{margin:0 -16px 20px;padding:24px 16px 22px}.ph1 h1{font-size:44px}.ph1::after{display:none}.ph1::before{width:140px}
 }
 
 /* panels */
-.panel{background:var(--surface);border:1px solid var(--border);border-radius:6px;padding:20px 22px;min-width:0}
+.panel{background:var(--surface);border:1px solid var(--border);border-radius:2px;padding:22px 26px;min-width:0}
 .panel .ph{display:flex;flex-wrap:wrap;justify-content:space-between;align-items:baseline;gap:4px 18px;margin-bottom:14px}
-.panel h3{font-family:var(--f-display);font-weight:600;font-size:23px;letter-spacing:.03em;text-transform:uppercase;margin:0;line-height:1.1}
+.panel h3{font-family:var(--f-display);font-style:italic;font-weight:800;font-size:28px;text-transform:uppercase;margin:0;line-height:1.1}
 .note{font-size:13px;color:var(--ink-2);max-width:78ch}
 .note2{font-size:13px;color:var(--ink-2);max-width:60ch}
 .foot{margin:12px 0 0;font-size:12px;color:var(--ink-2);max-width:90ch}
@@ -97,16 +87,17 @@ svg .t-muted{fill:var(--muted)}
 .sw{display:inline-block;flex:none}
 .sw.ln{width:18px;height:3px;border-radius:1px;vertical-align:middle;margin-right:7px}
 .car{display:inline-flex;align-items:center;font-family:var(--f-mono);font-size:13px;color:var(--ink)}
+.car+.dim{margin-left:12px}
 
 /* controls */
-.ctrls{display:flex;flex-wrap:wrap;gap:14px 28px;align-items:flex-end;padding:14px 18px;background:var(--surface);border:1px solid var(--border);border-radius:6px}
+.ctrls{display:flex;flex-wrap:wrap;gap:14px 28px;align-items:flex-end;padding:16px 22px;background:var(--surface);border:1px solid var(--border);border-radius:2px}
 .ctl-g{display:flex;flex-direction:column;gap:5px;min-width:0}
 .seg{display:inline-flex;flex-wrap:wrap;border:1px solid var(--axis);border-radius:4px;overflow:hidden}
 .seg button{background:transparent;border:0;padding:6px 12px;cursor:pointer;font-family:var(--f-mono);font-size:12px;color:var(--ink-2)}
 .seg button+button{border-left:1px solid var(--axis)}
-.seg button[aria-pressed="true"]{background:var(--ink);color:var(--plane)}
+.seg button[aria-pressed="true"]{background:var(--red);color:#fff}
 .seg button:not([aria-pressed="true"]):hover{background:var(--surface-2)}
-.sel{background:var(--surface-2);border:1px solid var(--axis);border-radius:4px;padding:6px 10px;min-width:220px;max-width:100%}
+.sel{appearance:none;-webkit-appearance:none;background:var(--surface-2) url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='8'%3E%3Cpath d='M1 1l5 5 5-5' fill='none' stroke='%23A4A4B8' stroke-width='1.6'/%3E%3C/svg%3E") no-repeat right 12px center;border:1px solid var(--grid);border-radius:2px;padding:10px 32px 10px 12px;min-width:220px;max-width:100%;font-weight:600;font-size:15px}
 .picker{display:flex;flex-direction:column;gap:8px;width:100%}
 .presets{display:flex;flex-wrap:wrap;gap:6px;align-items:center}
 .dchips{display:flex;flex-wrap:wrap;gap:6px}
@@ -114,25 +105,27 @@ svg .t-muted{fill:var(--muted)}
 .dchip[aria-pressed="true"]{background:var(--surface-2);color:var(--ink);border-color:var(--ink-2)}
 .dchip[aria-pressed="false"]{opacity:.6}
 .dchip:hover{background:var(--surface-2)}
-.btn{background:transparent;border:1px solid var(--axis);color:var(--ink);padding:4px 11px;border-radius:4px;cursor:pointer;font-family:var(--f-mono);font-size:12px}
+.btn{background:transparent;border:1px solid var(--axis);color:var(--ink);padding:5px 12px;border-radius:2px;cursor:pointer;font-family:var(--f-mono);font-size:12px}
 .btn:hover{background:var(--surface-2)}
 
 /* KPI */
-.kpis{display:grid;grid-template-columns:repeat(auto-fit,minmax(172px,1fr));gap:14px}
-.kpi{background:var(--surface);border:1px solid var(--border);border-radius:6px;padding:16px 18px;min-width:0}
-.kpi .v{font-family:var(--f-display);font-weight:600;font-size:40px;line-height:1.05;margin:4px 0 2px;display:flex;gap:8px;align-items:baseline;flex-wrap:wrap}
+.kpis{display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));border-top:1px solid var(--grid);border-left:1px solid var(--grid)}
+.kpi{background:var(--plane);padding:20px 24px;min-width:0;border-right:1px solid var(--grid);border-bottom:1px solid var(--grid)}
+.kpi .v{font-family:var(--f-display);font-style:italic;font-weight:800;font-size:46px;line-height:1.05;margin:4px 0 2px;display:flex;gap:8px;align-items:baseline;flex-wrap:wrap}
 .kpi .v small{font-family:var(--f-mono);font-size:12px;font-weight:400;color:var(--ink-2)}
-.kpi .s{font-size:12px;color:var(--ink-2)}
+.kpi .s{font-size:14px;color:var(--ink-2)}
 
 /* tables */
 .tbl{overflow-x:auto}
 table{border-collapse:collapse;width:100%;font-size:13px}
-th{font-family:var(--f-mono);font-size:11px;letter-spacing:.06em;text-transform:uppercase;font-weight:400;color:var(--muted);text-align:left;padding:7px 12px;border-bottom:1px solid var(--axis);white-space:nowrap}
-td{padding:8px 12px;border-bottom:1px solid var(--grid);white-space:nowrap}
+th{font-family:var(--f-mono);font-size:11px;letter-spacing:.12em;text-transform:uppercase;font-weight:400;color:var(--muted);text-align:left;padding:8px 12px;border-bottom:2px solid var(--red);white-space:nowrap}
+td{padding:10px 12px;border-bottom:1px solid #1E1E2A;white-space:nowrap}
 td.num,th.num{text-align:right;font-family:var(--f-mono);font-variant-numeric:tabular-nums}
 tbody tr:last-child td{border-bottom:0}
 tbody tr:hover td{background:var(--surface-2)}
-.chip{display:inline-flex;align-items:center;justify-content:center;min-width:22px;height:20px;padding:0 5px;border-radius:3px;font-family:var(--f-mono);font-size:11px;font-weight:500}
+.chip{display:inline-flex;align-items:center;justify-content:center;width:24px;height:24px;padding:0;border-radius:50%;border:3px solid var(--muted);background:var(--plane);color:var(--ink);font-family:var(--f-mono);font-size:11px;font-weight:500}
+.posbox{display:inline-flex;align-items:center;justify-content:center;width:36px;height:36px;font:italic 800 24px var(--f-display);background:var(--surface-2);color:var(--ink);transform:skewX(-10deg)}
+.posbox.pod{background:var(--red);color:#fff}
 .stp{display:inline-flex;align-items:center;gap:4px;margin-right:10px;font-size:12px}
 .tag{font-family:var(--f-mono);font-size:10px;border:1px solid var(--axis);padding:0 4px;border-radius:3px;color:var(--ink-2)}
 .pill{display:inline-flex;gap:6px;align-items:center;font-family:var(--f-mono);font-size:11px;letter-spacing:.04em;text-transform:uppercase;padding:2px 8px;border-radius:3px;border:1px solid var(--axis)}
@@ -164,15 +157,15 @@ pre.code{margin:12px 0 0;max-height:360px;overflow:auto;background:var(--surface
 .tip b{font-weight:500;display:block;margin-bottom:2px}.tip .r{display:flex;gap:16px;justify-content:space-between}.tip .r span:first-child{color:var(--ink-2)}
 @media (prefers-reduced-motion:reduce){*{scroll-behavior:auto!important}}
 
-details#pick{border:1px solid var(--border);border-radius:6px;background:var(--surface)}
+details#pick{border:1px solid var(--border);border-radius:2px;background:var(--surface)}
 details#pick summary{cursor:pointer;padding:9px 12px;font-family:var(--f-mono);font-size:12px;color:var(--ink-2);list-style:none}
 details#pick summary::-webkit-details-marker{display:none}
 details#pick summary::before{content:"\25b8";display:inline-block;margin-right:8px}
 details#pick[open] summary::before{content:"\25be"}
 .picks{display:flex;flex-direction:column;gap:12px;padding:4px 12px 14px}
-.picks .sel{min-width:0;width:100%}
+.picks .sel{min-width:0;width:100%;text-overflow:ellipsis;font-size:14px}
 #loadst{font-family:var(--f-mono);font-size:12px;color:var(--ink-2)}#loadst.err{color:var(--loss)}
-@media (max-width:900px){.picks{flex-direction:row;flex-wrap:wrap}.picks .ctl-g{flex:1 1 200px}}
+@media (max-width:900px){.picks{flex-direction:row;flex-wrap:wrap}.picks .ctl-g{flex:1 1 150px}}
 </style>
 
 <div class="app">
@@ -182,14 +175,14 @@ details#pick[open] summary::before{content:"\25be"}
       <div class="picks">
         <label class="ctl-g"><span class="lbl">Season</span><select id="selYear" class="sel"></select></label>
         <label class="ctl-g"><span class="lbl">Race weekend</span><select id="selMeet" class="sel"></select></label>
-        <label class="ctl-g"><span class="lbl">Session</span><select id="selSess" class="sel"></select></label>
         <label class="ctl-g" id="focusG" hidden><span class="lbl">Focus driver</span><select id="selFocus" class="sel"></select></label>
         <div id="loadst" hidden></div>
       </div>
     </details>
     <nav id="nav" aria-label="Pages"></nav>
+    <div class="srcnote">Source · OpenF1<br>Cached on this machine</div>
   </aside>
-  <main id="main"></main>
+  <div class="content"><div id="tabs" role="group" aria-label="Session"></div><main id="main"></main></div>
 </div>
 <div class="tip" id="tip" hidden></div>
 <script>
@@ -226,7 +219,7 @@ function spread(items,min){
   return items;
 }
 /* ---- theme-aware colour helpers ---- */
-const isDark=()=>{const t=document.documentElement.dataset.theme;if(t)return t==='dark';try{return !matchMedia('(prefers-color-scheme: light)').matches;}catch(e){return true;}};
+const isDark=()=>true;
 const hex2=h=>{h=h.replace('#','');if(h.length===3)h=h.split('').map(c=>c+c).join('');return[parseInt(h.slice(0,2),16),parseInt(h.slice(2,4),16),parseInt(h.slice(4,6),16)];};
 const toHex=a=>'#'+a.map(v=>clamp(Math.round(v),0,255).toString(16).padStart(2,'0')).join('');
 const lum=h=>{const[r,g,b]=hex2(h).map(v=>{v/=255;return v<=.03928?v/12.92:Math.pow((v+.055)/1.055,2.4);});return .2126*r+.7152*g+.0722*b;};
@@ -236,6 +229,7 @@ function tcol(h){
   if(isDark())return lum(h)<.12?mix(h,'#ffffff',.42):h;
   return lum(h)>.45?mix(h,'#000000',.4):h;
 }
+const dcol=d=>d.dash?mix(tcol(d.color),isDark()?'#ffffff':'#000000',.38):tcol(d.color);
 const colDist=(a,b)=>{const x=hex2(a),y=hex2(b);return Math.hypot(x[0]-y[0],x[1]-y[1],x[2]-y[2]);};
 function pairColors(a,b){const ca=tcol(a.color),cb=tcol(b.color);return colDist(ca,cb)<70?[ca,{c:mix(cb,isDark()?'#ffffff':'#000000',.45),dash:true}]:[ca,{c:cb,dash:false}];}
 function seqColor(p){const lo=isDark()?'#184f95':'#cde2fb',hi=isDark()?'#cfe2fa':'#0d366b';return mix(lo,hi,clamp(p,0,1));}
@@ -243,8 +237,8 @@ const CMAP={SOFT:'S',MEDIUM:'M',HARD:'H',INTERMEDIATE:'I',WET:'W'};
 const cLet=c=>CMAP[c]||'?';
 const cVar=c=>({SOFT:'var(--c-s)',MEDIUM:'var(--c-m)',HARD:'var(--c-h)',INTERMEDIATE:'var(--c-i)',WET:'var(--c-w)'}[c]||'var(--muted)');
 const cInk=c=>({SOFT:'var(--c-s-ink)',MEDIUM:'var(--c-m-ink)',HARD:'var(--c-h-ink)',INTERMEDIATE:'var(--c-i-ink)',WET:'var(--c-w-ink)'}[c]||'var(--ink)');
-const chip=c=>`<span class="chip" style="background:${cVar(c)};color:${cInk(c)}" title="${esc(c)}">${cLet(c)}</span>`;
-const swatch=d=>{const c=tcol(d.color);return d.dash?`<i class="sw ln" style="background:repeating-linear-gradient(90deg,${c} 0 5px,transparent 5px 8px)"></i>`:`<i class="sw ln" style="background:${c}"></i>`;};
+const chip=c=>`<span class="chip" style="border-color:${cVar(c)}" title="${esc(c)}">${cLet(c)}</span>`;
+const swatch=d=>{const c=dcol(d);return d.dash?`<i class="sw ln" style="background:repeating-linear-gradient(90deg,${c} 0 6px,transparent 6px 10px)"></i>`:`<i class="sw ln" style="background:${c}"></i>`;};
 const dTag=d=>`<span class="car">${swatch(d)}${esc(d.code)}</span>`;
 
 /* ---- tooltip ---- */
@@ -309,7 +303,7 @@ function lines(host,o){
       }else{
         let d='',pen=false;
         se.pts.forEach(p=>{if(p[1]==null){pen=false;return;}d+=(pen?'L':'M')+X(p[0]).toFixed(1)+' '+Y(p[1]).toFixed(1);pen=true;});
-        if(d)s+=`<path d="${d}" style="fill:none;stroke:${se.color};stroke-width:${se.w||2};stroke-linejoin:round;stroke-linecap:round;opacity:${se.op??1}${se.dash?';stroke-dasharray:6 4':''}"/>`;
+        if(d)s+=`<path d="${d}" style="fill:none;stroke:${se.color};stroke-width:${se.w||2};stroke-linejoin:round;stroke-linecap:round;opacity:${se.op??1}${se.dash?';stroke-dasharray:9 5':''}"/>`;
         if(o.endLabels&&se.label){let last=null;for(let i=se.pts.length-1;i>=0;i--)if(se.pts[i][1]!=null){last=se.pts[i];break;}if(last)ends.push({y:Y(last[1]),t:se.label,c:se.color});}
       }
     });
@@ -604,7 +598,7 @@ const panel=(id,title,note,o={})=>`<section class="panel ${o.cls||''}"><div clas
 const segHTML=(name,items,cur)=>`<div class="seg" data-seg="${name}" role="group">${items.map(i=>`<button type="button" data-v="${i[0]}" aria-pressed="${String(cur)===String(i[0])}">${i[1]}</button>`).join('')}</div>`;
 const ctl=(label,html)=>`<div class="ctl-g"><div class="lbl">${label}</div>${html}</div>`;
 const winBands=M=>M.windows.map(w=>({x0:w.lap0-.5,x1:w.lap1+.5,label:w.kind}));
-const dseries=(d,pts,extra={})=>({id:d.n,label:d.code,color:tcol(d.color),dash:d.dash,pts,...extra});
+const dseries=(d,pts,extra={})=>({id:d.n,label:d.code,color:dcol(d),dash:d.dash,pts,...extra});
 const pickerHTML=()=>`<div class="picker" id="picker"></div>`;
 function bindPicker(){
   const el=$('#picker');if(!el)return;const M=S.M;
@@ -645,10 +639,10 @@ function pgOverview(M){
     kpi('Stints',String(M.stints.length),'',[...new Set(M.stints.map(s=>s.comp))].map(c=>chip(c)).join(' ')||'No tyre data')}</div>`;
   const hasQ=M.drivers.some(d=>d.res.q);
   const rows=M.drivers.map(d=>{const dp=d.grid!=null&&d.finish<99?d.grid-d.finish:null;
-    if(R)return`<tr><td class="num">${d.finish<99?d.finish:'–'}</td><td>${dTag(d)} <span class="dim">${esc(d.name)}</span></td><td class="dim">${esc(d.team)}</td><td class="num">${d.grid==null?'–':d.grid}</td>
+    if(R)return`<tr><td class="num"><span class="posbox${d.finish<=3?' pod':''}">${d.finish<99?d.finish:'–'}</span></td><td>${dTag(d)} <span class="dim">${esc(d.name)}</span></td><td class="dim">${esc(d.team)}</td><td class="num">${d.grid==null?'–':d.grid}</td>
     <td class="num ${dp>0?'up':dp<0?'down':''}">${dp==null||d.res.dnf?'–':dp>0?'▲'+dp:dp<0?'▼'+(-dp):'='}</td><td class="num">${d.res.laps==null?d.laps.length:d.res.laps}</td>
     <td class="num">${resultText(d)}</td><td class="num">${fmtLap(d.best)}</td><td class="num">${fmtLap(d.med)}</td><td class="num">${M.pits.filter(p=>p.n===d.n).length}</td><td>${stratHTML(d)}</td></tr>`;
-    return`<tr><td class="num">${d.finish<99?d.finish:'–'}</td><td>${dTag(d)} <span class="dim">${esc(d.name)}</span></td><td class="dim">${esc(d.team)}</td><td class="num">${fmtLap(d.best)}</td><td class="num">${d.finish===1||d.best==null||top.best==null?'':'+'+f3(d.best-top.best)}</td>
+    return`<tr><td class="num"><span class="posbox${d.finish<=3?' pod':''}">${d.finish<99?d.finish:'–'}</span></td><td>${dTag(d)} <span class="dim">${esc(d.name)}</span></td><td class="dim">${esc(d.team)}</td><td class="num">${fmtLap(d.best)}</td><td class="num">${d.finish===1||d.best==null||top.best==null?'':'+'+f3(d.best-top.best)}</td>
     ${hasQ?[0,1,2].map(i=>`<td class="num">${d.res.q?qFmt(d.res.q[i]):''}</td>`).join(''):''}<td class="num">${d.laps.filter(l=>l.dur!=null).length}</td><td>${stratHTML(d)}</td></tr>`;}).join('');
   const head=R?`<th class="num">Pos</th><th>Driver</th><th>Team</th><th class="num">Grid</th><th class="num">Places</th><th class="num">Laps</th><th class="num">Time / gap</th><th class="num">Fastest lap</th><th class="num">Median clean lap</th><th class="num">Stops</th><th>Stints (laps)</th>`
     :`<th class="num">Pos</th><th>Driver</th><th>Team</th><th class="num">Best lap</th><th class="num">Gap</th>${hasQ?'<th class="num">Q1</th><th class="num">Q2</th><th class="num">Q3</th>':''}<th class="num">Timed laps</th><th>Stints (laps)</th>`;
@@ -672,7 +666,7 @@ function pgOverview(M){
       if(!list.length){$('#c-gaps').innerHTML=empty('No timed laps in this session.');return;}
       const b=list[0].best,hi=Math.min(list[list.length-1].best-b,quant(list.map(d=>d.best-b),.9)*1.6+.3);
       hbars($('#c-gaps'),{aria:'Best lap gap to the fastest',labelW:96,valueW:90,rowH:28,
-        rows:list.map(d=>({label:`P${d.finish<99?d.finish:'–'} ${d.code}`,value:d.best-b,text:d.best===b?fmtLap(b):'+'+f3(d.best-b),color:tcol(d.color),tip:tipRows(esc(d.name),[['Best lap',fmtLap(d.best)],['On lap',d.bestL?d.bestL.lap:'–'],['Team',esc(d.team)]])})),
+        rows:list.map(d=>({label:`P${d.finish<99?d.finish:'–'} ${d.code}`,value:d.best-b,text:d.best===b?fmtLap(b):'+'+f3(d.best-b),color:dcol(d),tip:tipRows(esc(d.name),[['Best lap',fmtLap(d.best)],['On lap',d.bestL?d.bestL.lap:'–'],['Team',esc(d.team)]])})),
         x:[0,Math.max(.5,Math.ceil(hi*10)/10)],xFmt:v=>v.toFixed(1)+' s',xTitle:'Seconds slower than the fastest lap (long tail cut off)'});
     }
   }};
@@ -689,7 +683,7 @@ function pgProgress(M){
   mount(){
     bindPicker();const sd=selDrivers(),N=M.drivers.length,x=[0,M.total];
     const ps=sd.map(d=>dseries(d,[[0,d.grid],...d.laps.map(l=>[l.lap,l.pos])],{w:2.4}));
-    const marks=[];sd.forEach(d=>M.pits.filter(p=>p.n===d.n).forEach(p=>{const l=d.lapBy.get(p.lap);if(l)marks.push({x:p.lap,y:l.pos,color:tcol(d.color),kind:'tri'});}));
+    const marks=[];sd.forEach(d=>M.pits.filter(p=>p.n===d.n).forEach(p=>{const l=d.lapBy.get(p.lap);if(l)marks.push({x:p.lap,y:l.pos,color:dcol(d),kind:'tri'});}));
     lines($('#c-pos'),{aria:'Position by lap',h:660,x,y:[1,N],invert:true,yTicks:Array.from({length:N},(_,i)=>i+1),yFmt:v=>'P'+v,xFmt:v=>v===0?'Grid':v,xTitle:'Lap',snap:1,bands:winBands(M),series:ps,marks,endLabels:true,tipFmt:v=>'P'+v,tipTitle:v=>v===0?'Starting grid':'End of lap '+v,
       xTicks:[0,...ticks(5,M.total,10).filter(t=>t>0)]});
     const cap=S.cap==='auto'?null:+S.cap;
@@ -698,7 +692,7 @@ function pgProgress(M){
     const top=cap||Math.max(10,Math.ceil(mx/10)*10);
     lines($('#c-gap'),{aria:'Gap to the leader by lap',h:540,x:[1,M.total],y:[0,top],invert:true,yFmt:v=>v+' s',xTitle:'Lap',snap:1,bands:winBands(M),series:gs,endLabels:true,zero:0,
       tipFmt:v=>v===0?'leader':'+'+f3(v)+' s',tipTitle:v=>'End of lap '+v,xTicks:ticks(1,M.total,12)});
-    hbars($('#c-int'),{aria:'Laps within one second of the car ahead',labelW:96,rowH:26,rows:il.map(o=>({label:`${o.d.code}`,value:o.v,color:tcol(o.d.color),tip:tipRows(esc(o.d.name),[['Laps within 1 s',o.v],['Finish',o.d.finish<99?'P'+o.d.finish:'–']])})),x:[0,Math.max(5,il[0].v+2)],xTitle:'Laps',fmt:v=>v+' laps'});
+    hbars($('#c-int'),{aria:'Laps within one second of the car ahead',labelW:96,rowH:26,rows:il.map(o=>({label:`${o.d.code}`,value:o.v,color:dcol(o.d),tip:tipRows(esc(o.d.name),[['Laps within 1 s',o.v],['Finish',o.d.finish<99?'P'+o.d.finish:'–']])})),x:[0,Math.max(5,il[0].v+2)],xTitle:'Laps',fmt:v=>v+' laps'});
   }};
 }
 
@@ -733,12 +727,12 @@ function pgLaps(M){
     let y=null;if(vals.length){const lo=quant(vals,0.01),hi=quant(vals,0.99),pad=Math.max(.15,(hi-lo)*.08);y=[Math.floor((lo-pad)*10)/10,Math.ceil((hi+pad)*10)/10];}
     lines($('#c-lt'),{aria:'Lap time by lap',h:680,x:[1,M.total],y:y||undefined,yFmt:abs?fmtLap:v=>sgn(v,1)+' s',xTitle:'Lap',snap:1,bands:winBands(M),series:ser,endLabels:true,zero:abs?null:0,
       tipFmt:abs?fmtLap:v=>sgn(v,3)+' s',tipTitle:v=>'Lap '+v,xTicks:ticks(1,M.total,12),m:{l:abs?76:70}});
-    const rows=byMed.map(d=>({label:d.code,color:tcol(d.color),vals:d.clean.map(l=>l.dur),
+    const rows=byMed.map(d=>({label:d.code,color:dcol(d),vals:d.clean.map(l=>l.dur),
       tip:tipRows(esc(d.name),[['Median',fmtLap(d.med)],['Std dev',f3(d.sd)+' s'],['Clean laps',d.clean.length],['Best clean',fmtLap(d.clean.length?Math.min(...d.clean.map(l=>l.dur)):null)]])}));
     const all=[];rows.forEach(r=>all.push(...r.vals));all.sort((a,b)=>a-b);
     strip($('#c-spread'),{aria:'Lap time distribution',rows,x:all.length?[Math.floor((all[0]-.2)*2)/2,Math.ceil((quant(all,.995)+.2)*2)/2]:[0,1],xFmt:fmtLap,xTitle:'Lap time',rowH:34});
     hbars($('#c-rank'),{aria:'Race pace ranking',labelW:96,valueW:80,rowH:28,
-      rows:byMed.map(d=>({label:d.code,value:d.med-bm,color:tcol(d.color),text:d.med===bm?'quickest':'+'+f3(d.med-bm)+' s',tip:tipRows(esc(d.name),[['Median clean lap',fmtLap(d.med)],['Mean',fmtLap(d.avg)],['Std dev',f3(d.sd)+' s']])})),
+      rows:byMed.map(d=>({label:d.code,value:d.med-bm,color:dcol(d),text:d.med===bm?'quickest':'+'+f3(d.med-bm)+' s',tip:tipRows(esc(d.name),[['Median clean lap',fmtLap(d.med)],['Mean',fmtLap(d.avg)],['Std dev',f3(d.sd)+' s']])})),
       x:[0,Math.max(.5,Math.ceil(Math.max(...byMed.map(d=>d.med-bm))*10)/10+.2)],xFmt:v=>v.toFixed(1)+' s',xTitle:'Seconds per lap slower than the quickest driver'});
   }};
 }
@@ -780,7 +774,7 @@ function pgTyres(M){
   mount(){
     stintMap($('#c-stint'),M);
     const ss=M.stints.filter(s=>s.comp===S.comp),ser=[],all=[];
-    ss.forEach(s=>{const col=tcol(s.d.color),pts=s.clean.map(l=>{const v=l.dur-s.d.med;all.push([l.age,v]);
+    ss.forEach(s=>{const col=dcol(s.d),pts=s.clean.map(l=>{const v=l.dur-s.d.med;all.push([l.age,v]);
       return[l.age,v,tipRows(`${esc(s.d.code)} · lap ${l.lap}`,[['Tyre age',l.age+' laps'],['Lap time',fmtLap(l.dur)],['Vs own median',sgn(v)+' s'],['Stint',s.stint]])];});
       ser.push({id:'d'+s.n+'-'+s.stint,dots:true,color:col,pts,r:3.4,op:.8});
       if(s.reg&&s.clean.length>3){const a0=Math.min(...s.clean.map(l=>l.age)),a1=Math.max(...s.clean.map(l=>l.age));
@@ -806,17 +800,17 @@ function pgPits(M){
     <section class="panel"><div class="ph"><h3>Pit stop log</h3></div>${tbl}</section></div>`,
   mount(){
     const mk=(key,id,fmt)=>{const list=M.pits.filter(p=>p[key]!=null).sort((a,b)=>a[key]-b[key]);if(!list.length||!$(id))return;const best=list[0][key];
-      hbars($(id),{aria:'Pit stop ranking',labelW:128,valueW:70,rowH:26,rows:list.map(p=>({label:`${p.code} lap ${p.lap}`,value:p[key],color:tcol(p.d.color),text:f2(p[key])+' s'+(p.neutral?' SC':''),
+      hbars($(id),{aria:'Pit stop ranking',labelW:128,valueW:70,rowH:26,rows:list.map(p=>({label:`${p.code} lap ${p.lap}`,value:p[key],color:dcol(p.d),text:f2(p[key])+' s'+(p.neutral?' SC':''),
         tip:tipRows(`${esc(p.code)} lap ${p.lap}`,[['Pit lane',f2(p.lane)+' s'],['Stationary',p.stop==null?'–':f2(p.stop)+' s'],['Tyres',`${p.from||'?'} to ${p.to||'?'}`],['Time lost',p.loss==null?'–':f1(p.loss)+' s']])})),
         x:[Math.max(0,Math.floor((best-.3)*2)/2),Math.ceil((list[list.length-1][key]+.3)*2)/2],xFmt:v=>v.toFixed(1)+' s',xTitle:fmt,dots:true});};
     mk('stop','#c-stop','Stationary time (s). The axis does not start at zero.');mk('lane','#c-lane','Pit lane time (s). The axis does not start at zero.');
     const key=hasStop?'stop':'lane',teams=[...new Set(M.drivers.map(d=>d.team))];
-    const trs=teams.map(t=>{const v=M.pits.filter(p=>p.d.team===t&&p[key]!=null).map(p=>p[key]);const d=M.drivers.find(x=>x.team===t);return{label:t.length>14?t.slice(0,13)+'…':t,color:tcol(d.color),vals:v,m:mean(v)};}).filter(r=>r.vals.length).sort((a,b)=>a.m-b.m);
+    const trs=teams.map(t=>{const v=M.pits.filter(p=>p.d.team===t&&p[key]!=null).map(p=>p[key]);const d=M.drivers.find(x=>x.team===t);return{label:t.length>14?t.slice(0,13)+'…':t,color:dcol(d),vals:v,m:mean(v)};}).filter(r=>r.vals.length).sort((a,b)=>a.m-b.m);
     if(trs.length){const all=trs.flatMap(r=>r.vals);
       strip($('#c-team'),{aria:'Pit stop times by team',rows:trs.map(r=>({...r,tip:tipRows(esc(r.label),[['Stops',r.vals.length],['Average',f2(r.m)+' s'],['Best',f2(Math.min(...r.vals))+' s']])})),x:[Math.floor((Math.min(...all)-.2)*2)/2,Math.ceil((Math.max(...all)+.2)*2)/2],xFmt:v=>v.toFixed(1),xTitle:hasStop?'Stationary time (s)':'Pit lane time (s)',rowH:46,labelW:170});}
     else $('#c-team').innerHTML=empty('No pit stop times in this file.');
     const ser=[{id:'p',dots:true,color:'var(--ink)',pts:[]}],bySeries=[];
-    M.pits.forEach(p=>{const l=p.d.lapBy.get(p.lap);if(!l||l.age==null)return;bySeries.push({id:'p'+p.n+'-'+p.lap,dots:true,color:tcol(p.d.color),r:6,op:.95,pts:[[p.lap,l.age,tipRows(`${esc(p.code)} · lap ${p.lap}`,[['Tyre age',l.age+' laps'],['Off',p.from||'?'],['On',p.to||'?'],['Under neutralisation',p.neutral?'yes':'no']])]]});});
+    M.pits.forEach(p=>{const l=p.d.lapBy.get(p.lap);if(!l||l.age==null)return;bySeries.push({id:'p'+p.n+'-'+p.lap,dots:true,color:dcol(p.d),r:6,op:.95,pts:[[p.lap,l.age,tipRows(`${esc(p.code)} · lap ${p.lap}`,[['Tyre age',l.age+' laps'],['Off',p.from||'?'],['On',p.to||'?'],['Under neutralisation',p.neutral?'yes':'no']])]]});});
     lines($('#c-when'),{aria:'Pit stop timing',h:520,x:[0,M.total],y:[0,Math.max(10,...bySeries.map(s=>s.pts[0][1]))+3],xTitle:'Lap of the stop',yTitle:'Tyre age (laps)',bands:winBands(M),series:bySeries,nearest:true,xTicks:ticks(0,M.total,12),m:{l:72}});
   }};
 }
@@ -836,16 +830,16 @@ function pgSectors(M){
     ${panel('c-sc','Top speed against fastest lap','Straight-line speed is one end of the trade between drag and downforce',{h:560})}</div>`,
   mount(){
     [1,2,3].forEach(k=>{const key='s'+k,b=M.bestSec[key],list=M.drivers.filter(d=>d.bs[key]!=null).sort((x,y)=>x.bs[key]-y.bs[key]);if(b==null)return;
-      hbars($('#c-s'+k),{aria:'Sector '+k+' deficit',labelW:96,valueW:80,rowH:26,rows:list.map(d=>({label:d.code,value:d.bs[key]-b,color:tcol(d.color),text:d.bs[key]===b?'best '+f3(b):'+'+f3(d.bs[key]-b),tip:tipRows(esc(d.name),[['Best sector '+k,f3(d.bs[key])+' s'],['Gap to best',sgn(d.bs[key]-b)+' s']])})),
+      hbars($('#c-s'+k),{aria:'Sector '+k+' deficit',labelW:96,valueW:80,rowH:26,rows:list.map(d=>({label:d.code,value:d.bs[key]-b,color:dcol(d),text:d.bs[key]===b?'best '+f3(b):'+'+f3(d.bs[key]-b),tip:tipRows(esc(d.name),[['Best sector '+k,f3(d.bs[key])+' s'],['Gap to best',sgn(d.bs[key]-b)+' s']])})),
         x:[0,Math.max(.3,Math.ceil(Math.max(...list.map(d=>d.bs[key]-b))*10)/10+.1)],xFmt:v=>v.toFixed(1)+' s',xTitle:'Seconds slower than the best sector'});});
     const key='max_'+S.spd,list=M.drivers.filter(d=>d[key]!=null).sort((a,b)=>b[key]-a[key]);
     if(list.length){const lo=Math.min(...list.map(d=>d[key])),hi=Math.max(...list.map(d=>d[key]));
-      hbars($('#c-spd'),{aria:'Top speeds',labelW:96,valueW:90,rowH:28,dots:true,rows:list.map(d=>({label:d.code,value:d[key],color:tcol(d.color),text:d[key]+' km/h',tip:tipRows(esc(d.name),[['Top speed',d[key]+' km/h'],['Team',esc(d.team)]])})),x:[Math.floor((lo-4)/5)*5,Math.ceil((hi+4)/5)*5],xFmt:v=>v,xTitle:'km/h'});}
+      hbars($('#c-spd'),{aria:'Top speeds',labelW:96,valueW:90,rowH:28,dots:true,rows:list.map(d=>({label:d.code,value:d[key],color:dcol(d),text:d[key]+' km/h',tip:tipRows(esc(d.name),[['Top speed',d[key]+' km/h'],['Team',esc(d.team)]])})),x:[Math.floor((lo-4)/5)*5,Math.ceil((hi+4)/5)*5],xFmt:v=>v,xTitle:'km/h'});}
     else $('#c-spd').innerHTML=empty('No speed trap values in this file.');
     const pts=M.drivers.filter(d=>d.max_st!=null&&d.best!=null);
     if(pts.length){const bs=pts.map(d=>d.best),ss=pts.map(d=>d.max_st);
       lines($('#c-sc'),{aria:'Top speed against fastest lap',h:560,x:[Math.floor(Math.min(...ss)-3),Math.ceil(Math.max(...ss)+3)],y:[Math.min(...bs)-.3,Math.max(...bs)+.3],yFmt:fmtLap,xTitle:'Top speed in the speed trap (km/h)',yTitle:'Fastest lap',nearest:true,m:{l:84},
-        series:pts.map(d=>({id:d.n,dots:true,color:tcol(d.color),r:7,op:.95,tag:d.code,pts:[[d.max_st,d.best,tipRows(esc(d.name),[['Top speed',d.max_st+' km/h'],['Fastest lap',fmtLap(d.best)],['Team',esc(d.team)]])]]}))});}
+        series:pts.map(d=>({id:d.n,dots:true,color:dcol(d),r:7,op:.95,tag:d.code,pts:[[d.max_st,d.best,tipRows(esc(d.name),[['Top speed',d.max_st+' km/h'],['Fastest lap',fmtLap(d.best)],['Team',esc(d.team)]])]]}))});}
     else $('#c-sc').innerHTML=empty('Needs speed trap values and lap times.');
   }};
 }
@@ -946,7 +940,7 @@ function pgDriver(M){
     ${panel('c-dgap','Gap to the leader','Seconds behind at the line',{h:380})}</div>`,
   mount(){
     $('#selD').addEventListener('change',e=>{S.drv=+e.target.value;rerender();});
-    const col=tcol(d.color),pl=ps.map(p=>({x:p.lap,label:'Pit'})),cl=d.laps.filter(l=>l.clean);
+    const col=dcol(d),pl=ps.map(p=>({x:p.lap,label:'Pit'})),cl=d.laps.filter(l=>l.clean);
     const v=cl.map(l=>l.dur).sort((a,b)=>a-b);
     lines($('#c-dl'),{aria:'Lap time against field median',h:520,x:[1,M.total],y:v.length?[Math.floor((quant(v,0)-.3)*10)/10,Math.ceil((quant(v,.99)+.3)*10)/10]:undefined,yFmt:fmtLap,xTitle:'Lap',snap:1,bands:winBands(M),vlines:pl,m:{l:76},top:24,xTicks:ticks(1,M.total,12),
       series:[{id:'f',label:'Field median',color:'var(--muted)',dash:true,w:2,pts:M.fieldMed.map((x,i)=>[i,x]).slice(2)},{id:'d',label:d.code,color:col,w:2.4,pts:d.laps.filter(l=>l.lap>1).map(l=>[l.lap,l.clean?l.dur:null])}],tipFmt:fmtLap,tipTitle:x=>'Lap '+x});
@@ -1031,6 +1025,7 @@ function pgData(M){
 
 /* ================= live data from OpenF1 (through the local server) ================= */
 let RID=0,LOADTOK=0;
+const surname=n=>{const w=String(n||'').split(/\s+/),u=w.filter(x=>x.length>2&&!x.includes('.')&&x===x.toUpperCase());return (u.length?u.join(' '):w[w.length-1])||n;};
 const LS={get:k=>{try{return localStorage.getItem(k);}catch(e){return null;}},set:(k,v)=>{try{localStorage.setItem(k,v);}catch(e){}}};
 const eq=(k,v)=>k+'='+encodeURIComponent(v),ge=(k,v)=>k+'>='+encodeURIComponent(v),le=(k,v)=>k+'<='+encodeURIComponent(v);
 async function api(ep,toks,fresh){
@@ -1053,7 +1048,13 @@ const NAV=[['overview','Overview',pgOverview,'Who finished where, and what decid
   ['driver','Driver',pgDriver,'One driver against the field',()=>true],
   ['conditions','Conditions',pgConditions,'Weather, flags and race control',()=>true],
   ['data','Data',pgData,'What is loaded, and where it came from',()=>true]];
-const CUR={meetings:[],sessions:[],session:null};
+const CUR={meetings:[],sessions:[],session:null,pending:null};
+const tabName=n=>{n=n||'';let m=n.match(/^Practice (\d)/i);if(m)return'FP'+m[1];if(/sprint (qualifying|shootout)/i.test(n))return'Sprint Quali';return n;};
+function renderTabs(){
+  const now=Date.now(),cur=CUR.pending||CUR.session,done=x=>x.date_end&&pd(x.date_end)<now;
+  $('#tabs').innerHTML=CUR.sessions.map(x=>`<button type="button" data-k="${esc(x.session_key)}" aria-pressed="${!!cur&&cur.session_key===x.session_key}" ${done(x)?'':'disabled'} title="${esc(x.session_name)} \u00b7 ${dstr(x.date_start)}${done(x)?'':' (not finished)'}">${esc(tabName(x.session_name))}</button>`).join('')
+    +(cur?`<span class="when">${new Date(pd(cur.date_start)).toLocaleDateString('en-GB',{weekday:'short',day:'2-digit',month:'short',year:'numeric'})}</span>`:'');
+}
 const setStatus=(t,err)=>{const e=$('#loadst');e.textContent=t||'';e.className=err?'err':'';e.hidden=!t;};
 
 /* ---- pickers ---- */
@@ -1074,7 +1075,7 @@ async function loadSessions(meeting,pickKey){
   const now=Date.now(),done=s=>s.date_end&&pd(s.date_end)<now;
   let sel=pickKey&&ss.find(s=>String(s.session_key)===String(pickKey));
   if(!sel){sel=ss.find(s=>/^race$/i.test(s.session_name)&&done(s))||[...ss].reverse().find(done)||ss[0];}
-  $('#selSess').innerHTML=ss.map(s=>opt(s.session_key,`${s.session_name} · ${dstr(s.date_start)}${done(s)?'':' (not finished)'}`,sel&&s.session_key===sel.session_key,!done(s))).join('')||opt('','No sessions',true,true);
+  CUR.pending=sel&&done(sel)?sel:null;renderTabs();
   setStatus('');
   return sel&&done(sel)?sel:null;
 }
@@ -1085,7 +1086,7 @@ const showError=msg=>{if(!S.M)$('#main').innerHTML=`<header class="ph1"><h1>Coul
 
 /* ---- session loading ---- */
 async function loadSession(sess,fresh){
-  const tok=++LOADTOK,sk=sess.session_key,kind=kindOf(sess),raceLike=kind==='race'||kind==='sprint';
+  CUR.pending=sess;renderTabs();const tok=++LOADTOK,sk=sess.session_key,kind=kindOf(sess),raceLike=kind==='race'||kind==='sprint';
   const meeting=CUR.meetings.find(m=>m.meeting_key===sess.meeting_key)||{};
   const steps=[['drivers',1],['laps',1],['stints'],['pit'],['session_result'],(raceLike||kind==='quali')?['starting_grid']:null,['race_control'],['weather'],raceLike?['position']:null].filter(Boolean);
   const got={},info=[];
@@ -1124,7 +1125,7 @@ function loadRaw(raw,name,info){
   S.sel=new Set(S.M.drivers.slice(0,5).map(d=>d.n));S.drv=S.M.drivers[0].n;S.tA=S.tB=S.comp=null;S.a=S.b=null;
   S.loadMsg=name?`Opened ${name}: ${S.M.drivers.length} drivers, ${S.M.total} laps.`:'';
   CUR.session=CUR.sessions.find(s=>s.session_key===raw.meta.session_key)||CUR.session;
-  $('#selFocus').innerHTML=S.M.drivers.map(d=>opt(d.n,`${d.code} · ${d.name}`,d.n===S.drv)).join('');$('#focusG').hidden=false;
+  $('#selFocus').innerHTML=S.M.drivers.map(d=>opt(d.n,`${d.code} · ${surname(d.name)}`,d.n===S.drv)).join('');$('#focusG').hidden=false;
   const vis=NAV.filter(n=>n[4](S.M)).map(n=>n[0]);if(!vis.includes((location.hash||'#overview').slice(1)))location.hash='#overview';
   rerender();scrollTo(0,0);
 }
@@ -1187,7 +1188,7 @@ async function init(){
   $('#selYear').innerHTML=ys.map(y=>opt(y,y,false)).join('');
   $('#selYear').addEventListener('change',e=>{S.M=null;chooseYear(+e.target.value);});
   $('#selMeet').addEventListener('change',async e=>{const m=CUR.meetings.find(x=>String(x.meeting_key)===e.target.value);if(!m)return;try{const s=await loadSessions(m);if(s)await loadSession(s);}catch(er){setStatus(er.message,true);}});
-  $('#selSess').addEventListener('change',async e=>{const s=CUR.sessions.find(x=>String(x.session_key)===e.target.value);if(s)try{await loadSession(s);}catch(er){setStatus(er.message,true);}});
+  $('#tabs').addEventListener('click',async e=>{const b=e.target.closest('button[data-k]');if(!b||b.disabled)return;const x=CUR.sessions.find(q=>String(q.session_key)===b.dataset.k);if(x)try{await loadSession(x);}catch(er){setStatus(er.message,true);}});
   $('#selFocus').addEventListener('change',e=>{S.drv=+e.target.value;const d=S.M.byN.get(S.drv);S.tA={n:d.n,lap:fastestLapNo(d)};S.tB=null;rerender();});
   if(matchMedia('(min-width:901px)').matches)$('#pick').open=true;
   render();
